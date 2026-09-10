@@ -310,7 +310,12 @@
 
   /* ---------- Squad ---------- */
   .squad-note{ font-size:0.85rem; color: var(--text-faint); margin: -6px 0 16px; }
+  .squad-columns{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
+  .squad-card{ padding:20px; }
+  .squad-card-head{ display:flex; align-items:center; gap:10px; font-weight:800; font-size:1.05rem; margin-bottom:14px; }
+  .squad-empty{ font-size:0.85rem; color: var(--text-faint); }
   .squad-grid{ display:flex; flex-wrap:wrap; gap:10px; }
+  @media (max-width: 560px){ .squad-columns{ grid-template-columns: 1fr; } }
   .player-chip{
     display:flex; align-items:center; gap:9px;
     background: var(--surface-2); border:1px solid var(--border);
@@ -466,9 +471,16 @@
   <!-- SQUAD -->
   <section class="block" id="squad">
     <div class="block-head"><h2>Squad</h2></div>
-    <p class="squad-note">Confirmed players — team &amp; pairing assignments will populate here once the fixture list is in.</p>
-    <div class="card" style="padding:22px;">
-      <div class="squad-grid" id="squadGrid"></div>
+    <p class="squad-note">South squad confirmed. North squad TBD — add players in the code once known.</p>
+    <div class="squad-columns">
+      <div class="card squad-card">
+        <div class="squad-card-head"><span class="swatch north"></span>North</div>
+        <div class="squad-grid" id="squadGridNorth"></div>
+      </div>
+      <div class="card squad-card">
+        <div class="squad-card-head"><span class="swatch south"></span>South</div>
+        <div class="squad-grid" id="squadGridSouth"></div>
+      </div>
     </div>
   </section>
 
@@ -519,20 +531,21 @@
         </div>
         <div class="field">
           <label for="f-north1">North player 1</label>
-          <select id="f-north1"></select>
+          <input type="text" id="f-north1" list="playerNames" placeholder="Type a name">
         </div>
         <div class="field">
           <label for="f-north2">North player 2</label>
-          <select id="f-north2"></select>
+          <input type="text" id="f-north2" list="playerNames" placeholder="Type a name">
         </div>
         <div class="field">
           <label for="f-south1">South player 1</label>
-          <select id="f-south1"></select>
+          <input type="text" id="f-south1" list="playerNames" placeholder="Type a name">
         </div>
         <div class="field">
           <label for="f-south2">South player 2</label>
-          <select id="f-south2"></select>
+          <input type="text" id="f-south2" list="playerNames" placeholder="Type a name">
         </div>
+        <datalist id="playerNames"></datalist>
         <div class="field full">
           <label for="f-status">Status</label>
           <select id="f-status">
@@ -610,9 +623,11 @@ const TOURNAMENT = {
     address: "Unit GH, Ventura Park, Radlett, St Albans, AL2 2DB"
   },
 
-  // All confirmed players for the day. Once fixtures assign people to a
-  // side, you can add a `team: "north" | "south"` field to each entry.
-  players: [
+  // Confirmed South squad. Add the North squad here once it's known —
+  // both lists feed the Squad section and the player autocomplete in
+  // the Add/Edit Match form (which also accepts any name typed by hand).
+  northPlayers: [],
+  southPlayers: [
     "KC", "Kaz", "Erf", "Tom", "Osh", "Rishi", "Max", "Len"
   ],
 
@@ -790,12 +805,16 @@ function renderFixtures() {
   `).join("") + `</div>`;
 }
 
+function playerChip(name) {
+  const initials = name.slice(0, 2).toUpperCase();
+  return `<div class="player-chip"><span class="player-avatar">${initials}</span><span class="name">${name}</span></div>`;
+}
+
 function renderSquad() {
-  const grid = document.getElementById("squadGrid");
-  grid.innerHTML = TOURNAMENT.players.map(name => {
-    const initials = name.slice(0, 2).toUpperCase();
-    return `<div class="player-chip"><span class="player-avatar">${initials}</span><span class="name">${name}</span></div>`;
-  }).join("");
+  document.getElementById("squadGridNorth").innerHTML = TOURNAMENT.northPlayers.length
+    ? TOURNAMENT.northPlayers.map(playerChip).join("")
+    : `<div class="squad-empty">No players added yet.</div>`;
+  document.getElementById("squadGridSouth").innerHTML = TOURNAMENT.southPlayers.map(playerChip).join("");
 }
 
 function renderStatusAndCountdown() {
@@ -880,11 +899,10 @@ async function handleDelete(id) {
    Add / edit match modal
    --------------------------------------------------------------------- */
 
-function initPlayerSelects() {
-  const ids = ["f-north1", "f-north2", "f-south1", "f-south2"];
-  const options = `<option value="">—</option>` +
-    TOURNAMENT.players.map(p => `<option value="${p}">${p}</option>`).join("");
-  ids.forEach(id => { document.getElementById(id).innerHTML = options; });
+function initPlayerDatalist() {
+  const all = [...TOURNAMENT.northPlayers, ...TOURNAMENT.southPlayers];
+  document.getElementById("playerNames").innerHTML =
+    all.map(p => `<option value="${p}"></option>`).join("");
 }
 
 function readSetPair(nId, sId) {
@@ -985,7 +1003,7 @@ function wireFixtureCardEvents() {
 }
 
 function init() {
-  initPlayerSelects();
+  initPlayerDatalist();
   renderStandings();
   renderFixtures();
   renderSquad();
