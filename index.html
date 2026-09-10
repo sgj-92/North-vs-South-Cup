@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>North vs South — Box Office Cup</title>
+<meta name="description" content="Live league table, fixtures and results for the North vs South Box Office Cup padel tournament.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0e0a;
+    --bg-2: #0f140f;
+    --surface: #161d16;
+    --surface-2: #1c241c;
+    --border: rgba(216, 223, 200, 0.10);
+    --border-strong: rgba(216, 223, 200, 0.18);
+    --text: #f2f5ec;
+    --text-dim: #aab4a0;
+    --text-faint: #75816e;
+
+    --olive: #8a9a5b;
+    --olive-light: #b7c98a;
+    --olive-dark: #5c6b39;
+
+    --north: #4a9de0;
+    --north-dim: rgba(74, 157, 224, 0.15);
+    --south: #e2683e;
+    --south-dim: rgba(226, 104, 62, 0.15);
+
+    --gold: #e0b84a;
+
+    --radius: 18px;
+    --radius-sm: 12px;
+    --shadow: 0 20px 50px -20px rgba(0,0,0,0.6);
+  }
+
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin:0;
+    background:
+      radial-gradient(1100px 600px at 15% -10%, rgba(138,154,91,0.16), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(74,157,224,0.10), transparent 55%),
+      radial-gradient(900px 600px at 100% 100%, rgba(226,104,62,0.08), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    line-height: 1.5;
+    padding-bottom: 60px;
+  }
+  h1,h2,h3,h4{ font-family:'Outfit', system-ui, sans-serif; margin:0; letter-spacing:-0.01em; }
+  a{ color: inherit; }
+  img{ max-width:100%; }
+  .wrap{ max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 18px 0;
+    gap: 12px;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; font-weight:800; font-size: 1.05rem; }
+  .brand .ball{
+    width: 30px; height:30px; border-radius:50%;
+    background: radial-gradient(circle at 32% 30%, #d9e6a8, var(--olive) 55%, var(--olive-dark) 100%);
+    box-shadow: inset -3px -3px 6px rgba(0,0,0,0.35), 0 2px 8px rgba(138,154,91,0.4);
+    flex-shrink:0;
+  }
+  .status-pill{
+    display:inline-flex; align-items:center; gap:7px;
+    padding: 7px 14px; border-radius: 999px;
+    background: var(--surface); border:1px solid var(--border-strong);
+    font-size: 0.8rem; font-weight:600; color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .status-dot{ width:8px; height:8px; border-radius:50%; background: var(--text-faint); }
+  .status-pill.live .status-dot{ background:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,0.25); animation: pulse 1.6s infinite; }
+  .status-pill.live{ color:#ff8a7a; border-color: rgba(239,68,68,0.35); }
+  .status-pill.done .status-dot{ background: var(--gold); }
+  .status-pill.done{ color: var(--gold); border-color: rgba(224,184,74,0.35); }
+  @keyframes pulse{ 0%{ box-shadow:0 0 0 0 rgba(239,68,68,0.5);} 100%{ box-shadow:0 0 0 8px rgba(239,68,68,0);} }
+
+  /* ---------- Hero ---------- */
+  .hero{
+    margin-top: 10px;
+    border-radius: 24px;
+    padding: 46px 34px;
+    position: relative;
+    overflow:hidden;
+    background:
+      linear-gradient(135deg, rgba(74,157,224,0.16), transparent 45%),
+      linear-gradient(315deg, rgba(226,104,62,0.14), transparent 45%),
+      var(--surface);
+    border: 1px solid var(--border-strong);
+    text-align:center;
+  }
+  .hero::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image:
+      linear-gradient(rgba(216,223,200,0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(216,223,200,0.045) 1px, transparent 1px);
+    background-size: 34px 34px;
+    mask-image: radial-gradient(circle at 50% 30%, black, transparent 75%);
+    pointer-events:none;
+  }
+  .eyebrow{
+    position:relative;
+    display:inline-block; font-weight:700; font-size:0.78rem;
+    letter-spacing: 0.14em; text-transform:uppercase;
+    color: var(--olive-light); margin-bottom: 14px;
+  }
+  .hero h1{
+    position:relative;
+    font-size: clamp(2rem, 5.5vw, 3.4rem);
+    font-weight: 900;
+    line-height: 1.05;
+  }
+  .hero h1 .vs{ color: var(--text-faint); font-weight: 600; margin: 0 6px; }
+  .hero h1 .north{ color: var(--north); }
+  .hero h1 .south{ color: var(--south); }
+  .hero .subtitle{
+    position:relative;
+    margin-top: 14px; font-size: 1.15rem; font-weight:700; color: var(--gold);
+  }
+  .hero .meta{
+    position:relative;
+    margin-top: 22px; display:flex; flex-wrap:wrap; gap: 12px; justify-content:center;
+  }
+  .meta-chip{
+    display:flex; align-items:center; gap:8px;
+    background: rgba(10,14,10,0.55); border:1px solid var(--border);
+    padding: 10px 16px; border-radius: 999px; font-size:0.9rem; color: var(--text-dim);
+    backdrop-filter: blur(6px);
+  }
+  .meta-chip strong{ color: var(--text); font-weight:600; }
+  .meta-chip a{ color: var(--north); text-decoration:none; font-weight:600; }
+  .meta-chip a:hover{ text-decoration:underline; }
+
+  .countdown{
+    position:relative;
+    margin-top: 28px;
+    display:flex; gap: 10px; justify-content:center; flex-wrap:wrap;
+  }
+  .cd-box{
+    background: var(--bg-2); border:1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px; min-width: 74px; text-align:center;
+  }
+  .cd-box .num{ font-family:'Outfit',sans-serif; font-size:1.7rem; font-weight:800; color:var(--olive-light); }
+  .cd-box .lbl{ font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-faint); margin-top:2px;}
+
+  .reminders{
+    position:relative;
+    margin-top: 26px; display:flex; flex-wrap:wrap; gap:10px; justify-content:center;
+  }
+  .reminder{
+    font-size: 0.82rem; font-weight:600; color: var(--text-dim);
+    background: var(--surface-2); border:1px solid var(--border);
+    padding: 7px 13px; border-radius: 999px;
+  }
+
+  /* ---------- Section shell ---------- */
+  section.block{ margin-top: 46px; }
+  .block-head{
+    display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+    margin-bottom: 18px; flex-wrap: wrap;
+  }
+  .block-head h2{ font-size: 1.5rem; font-weight:800; }
+  .block-head .hint{ font-size:0.85rem; color: var(--text-faint); }
+  .card{
+    background: var(--surface); border:1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+
+  /* ---------- League table ---------- */
+  .table-card{ padding: 6px; overflow-x:auto; }
+  table{ width:100%; border-collapse: collapse; min-width: 640px; }
+  th, td{ padding: 16px 14px; text-align:center; font-size:0.92rem; }
+  th{
+    text-align:left; font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase;
+    color: var(--text-faint); font-weight:700; border-bottom: 1px solid var(--border);
+  }
+  th:first-child, td:first-child{ text-align:left; }
+  th.pts, td.pts{ text-align:center; }
+  tbody tr{ border-bottom: 1px solid var(--border); }
+  tbody tr:last-child{ border-bottom:none; }
+  .team-cell{ display:flex; align-items:center; gap:12px; font-weight:700; font-size:1.02rem; }
+  .swatch{ width:12px; height:12px; border-radius:4px; flex-shrink:0; }
+  .swatch.north{ background: var(--north); box-shadow: 0 0 10px rgba(74,157,224,0.6); }
+  .swatch.south{ background: var(--south); box-shadow: 0 0 10px rgba(226,104,62,0.6); }
+  td.pts{ font-family:'Outfit',sans-serif; font-weight:800; font-size:1.15rem; color: var(--gold); }
+  td.diff-pos{ color: var(--olive-light); }
+  td.diff-neg{ color: #e28a7a; }
+  .leader-row{ position:relative; }
+  .leader-row td:first-child::after{
+    content: "▲ Leading";
+    display:block; font-size:0.65rem; font-weight:700; color: var(--olive-light);
+    letter-spacing:0.04em; margin-top:3px;
+  }
+
+  /* ---------- Fixtures ---------- */
+  .fixtures-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap:14px; }
+  .fixture-card{ padding: 18px; display:flex; flex-direction:column; gap:12px; }
+  .fixture-top{ display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color: var(--text-faint); font-weight:600; letter-spacing:0.03em; text-transform:uppercase;}
+  .fixture-badge{ padding:3px 10px; border-radius:999px; font-size:0.68rem; font-weight:700; letter-spacing:0.03em; }
+  .fixture-badge.scheduled{ background: var(--surface-2); color: var(--text-dim); border:1px solid var(--border); }
+  .fixture-badge.final{ background: rgba(224,184,74,0.14); color: var(--gold); border:1px solid rgba(224,184,74,0.3); }
+  .fixture-badge.draw{ background: rgba(216,223,200,0.08); color: var(--text-dim); border:1px solid var(--border); }
+  .fixture-sides{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .fixture-side{ flex:1; min-width:0; }
+  .fixture-side.north{ text-align:left; }
+  .fixture-side.south{ text-align:right; }
+  .fixture-pair{ font-weight:700; font-size:0.95rem; }
+  .fixture-side.north .fixture-pair{ color: var(--north); }
+  .fixture-side.south .fixture-pair{ color: var(--south); }
+  .fixture-score{ font-family:'Outfit',sans-serif; font-weight:800; font-size:1.1rem; color: var(--text-dim); white-space:nowrap; padding: 0 8px;}
+
+  .empty-state{
+    text-align:center; padding: 46px 24px; color: var(--text-dim);
+  }
+  .empty-state .ico{ font-size:2rem; margin-bottom:10px; }
+  .empty-state h3{ font-size:1.1rem; margin-bottom:6px; }
+  .empty-state p{ font-size:0.9rem; color: var(--text-faint); max-width:420px; margin: 0 auto; }
+
+  /* ---------- Rules ---------- */
+  .rules-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(230px,1fr)); gap:14px; }
+  .rule-card{ padding:20px; }
+  .rule-card .ico{ font-size:1.4rem; }
+  .rule-card h3{ font-size:1rem; margin: 10px 0 6px; }
+  .rule-card p{ font-size:0.87rem; color: var(--text-dim); margin:0; }
+
+  .points-table{ display:flex; gap:14px; flex-wrap:wrap; margin-top:16px; }
+  .points-pill{
+    flex:1; min-width: 190px;
+    background: var(--surface-2); border:1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 14px 16px;
+    display:flex; align-items:center; gap:12px;
+  }
+  .points-pill .n{ font-family:'Outfit',sans-serif; font-weight:900; font-size:1.6rem; color: var(--olive-light); }
+  .points-pill .d{ font-size:0.82rem; color: var(--text-dim); }
+
+  /* ---------- Squad ---------- */
+  .squad-note{ font-size:0.85rem; color: var(--text-faint); margin: -6px 0 16px; }
+  .squad-grid{ display:flex; flex-wrap:wrap; gap:10px; }
+  .player-chip{
+    display:flex; align-items:center; gap:9px;
+    background: var(--surface-2); border:1px solid var(--border);
+    padding: 9px 15px 9px 9px; border-radius: 999px;
+  }
+  .player-avatar{
+    width:28px; height:28px; border-radius:50%;
+    background: linear-gradient(135deg, var(--olive-light), var(--olive-dark));
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.72rem; font-weight:800; color:#111;
+  }
+  .player-chip span.name{ font-weight:600; font-size:0.9rem; }
+
+  /* ---------- Trophy ---------- */
+  .trophy-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:14px; }
+  .trophy-card{ padding: 24px 20px; text-align:center; }
+  .trophy-card .ico{ font-size:2rem; }
+  .trophy-card h3{ font-size:0.95rem; margin: 10px 0 4px; color: var(--text-dim); font-weight:700; text-transform:uppercase; letter-spacing:0.04em; font-size:0.75rem;}
+  .trophy-card .value{ font-family:'Outfit',sans-serif; font-weight:800; font-size:1.2rem; color: var(--gold); margin-top:4px; }
+  .trophy-card .value.tbd{ color: var(--text-faint); font-weight:600; font-size:1rem; }
+
+  footer{ text-align:center; margin-top:54px; color: var(--text-faint); font-size:0.82rem; }
+  footer .heart{ color: var(--south); }
+
+  @media (max-width: 560px){
+    .hero{ padding: 34px 18px; }
+    .cd-box{ min-width: 62px; padding: 10px 10px; }
+    .fixture-sides{ flex-direction:column; align-items:stretch; gap:6px; }
+    .fixture-side.south{ text-align:left; }
+    .fixture-score{ align-self:center; padding: 4px 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand"><span class="ball"></span> Box Office Cup</div>
+    <div id="statusPill" class="status-pill"><span class="status-dot"></span><span id="statusText">Loading…</span></div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="eyebrow">Padel • Team Tournament</div>
+    <h1><span class="north">North</span><span class="vs">vs</span><span class="south">South</span></h1>
+    <div class="subtitle">🏆 The Box Office Cup</div>
+
+    <div class="meta">
+      <div class="meta-chip">📅 <strong>Thursday 10 September</strong> · 7:30pm – 11:00pm</div>
+      <div class="meta-chip">📍 <a href="https://www.google.com/maps/search/?api=1&query=Encore%20Padel%2C%20Unit%20GH%2C%20Ventura%20Park%2C%20Radlett%2C%20St%20Albans%2C%20AL2%202DB" target="_blank" rel="noopener">Encore Padel, Radlett (AL2 2DB)</a></div>
+    </div>
+
+    <div class="countdown" id="countdown">
+      <div class="cd-box"><div class="num" id="cd-d">--</div><div class="lbl">Days</div></div>
+      <div class="cd-box"><div class="num" id="cd-h">--</div><div class="lbl">Hours</div></div>
+      <div class="cd-box"><div class="num" id="cd-m">--</div><div class="lbl">Mins</div></div>
+      <div class="cd-box"><div class="num" id="cd-s">--</div><div class="lbl">Secs</div></div>
+    </div>
+
+    <div class="reminders">
+      <div class="reminder">🚨 Be on time</div>
+      <div class="reminder">🎾 Fast4 · Star Point (golden point after 2nd deuce)</div>
+      <div class="reminder">🤝 Rotating partners — 3 matches each</div>
+      <div class="reminder">👕 Money Padel tee — olive green</div>
+      <div class="reminder">🏆 Trophy + Best &amp; Worst Player</div>
+    </div>
+  </div>
+
+  <!-- LEAGUE TABLE -->
+  <section class="block" id="table">
+    <div class="block-head">
+      <h2>League Table</h2>
+      <span class="hint">Updates automatically as results are added</span>
+    </div>
+    <div class="card table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Team</th>
+            <th>MP</th>
+            <th>W</th>
+            <th>D</th>
+            <th>L</th>
+            <th>Sets</th>
+            <th>Games</th>
+            <th class="pts">Pts</th>
+          </tr>
+        </thead>
+        <tbody id="standingsBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- FIXTURES -->
+  <section class="block" id="fixtures">
+    <div class="block-head">
+      <h2>Fixtures &amp; Results</h2>
+      <span class="hint" id="fixturesHint"></span>
+    </div>
+    <div id="fixturesContainer"></div>
+  </section>
+
+  <!-- FORMAT & SCORING -->
+  <section class="block" id="rules">
+    <div class="block-head"><h2>Format &amp; Scoring</h2></div>
+    <div class="rules-grid">
+      <div class="card rule-card">
+        <div class="ico">🎾</div>
+        <h3>Fast4 Scoring</h3>
+        <p>First to 4 games wins a set, with a tiebreak at 3–3 played to 7.</p>
+      </div>
+      <div class="card rule-card">
+        <div class="ico">⚡</div>
+        <h3>Star Point</h3>
+        <p>Golden point is played after the <em>second</em> deuce in every game.</p>
+      </div>
+      <div class="card rule-card">
+        <div class="ico">🔟</div>
+        <h3>Deciding Breaker</h3>
+        <p>If a match reaches one set all, a match tiebreak to 10 decides the winner.</p>
+      </div>
+      <div class="card rule-card">
+        <div class="ico">⏱️</div>
+        <h3>Time Cap</h3>
+        <p>Each tie is max one hour including breaks. Unfinished ties are recorded as a draw.</p>
+      </div>
+      <div class="card rule-card">
+        <div class="ico">🔁</div>
+        <h3>Rotating Pairs</h3>
+        <p>Everyone plays 3 matches, partnering a different teammate each time.</p>
+      </div>
+      <div class="card rule-card">
+        <div class="ico">💷</div>
+        <h3>Payments</h3>
+        <p>If you haven't paid yet, bring cash on the day.</p>
+      </div>
+    </div>
+
+    <div class="points-table">
+      <div class="points-pill"><div class="n">3</div><div class="d">points for a match <strong>win</strong></div></div>
+      <div class="points-pill"><div class="n">1</div><div class="d">point for a loss where you won a set, or a <strong>draw</strong></div></div>
+      <div class="points-pill"><div class="n">0</div><div class="d">points for a straight-sets loss</div></div>
+    </div>
+  </section>
+
+  <!-- SQUAD -->
+  <section class="block" id="squad">
+    <div class="block-head"><h2>Squad</h2></div>
+    <p class="squad-note">Confirmed players — team &amp; pairing assignments will populate here once the fixture list is in.</p>
+    <div class="card" style="padding:22px;">
+      <div class="squad-grid" id="squadGrid"></div>
+    </div>
+  </section>
+
+  <!-- TROPHY -->
+  <section class="block" id="trophy">
+    <div class="block-head"><h2>Trophy Cabinet</h2></div>
+    <div class="trophy-grid">
+      <div class="card trophy-card">
+        <div class="ico">🏆</div>
+        <h3>Winning Team</h3>
+        <div class="value tbd" id="winningTeam">To be decided</div>
+      </div>
+      <div class="card trophy-card">
+        <div class="ico">🌟</div>
+        <h3>Best Player</h3>
+        <div class="value tbd">To be decided</div>
+      </div>
+      <div class="card trophy-card">
+        <div class="ico">👀</div>
+        <h3>Worst Player</h3>
+        <div class="value tbd">To be decided</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Built for the North vs South Box Office Cup <span class="heart">♥</span> Let's go to war.
+  </footer>
+</div>
+
+<script>
+/* ======================================================================
+   TOURNAMENT DATA
+   Edit PLAYERS and FIXTURES below once the fixture list is confirmed.
+   Everything else (league table, fixture cards, status pill, countdown)
+   recalculates automatically from this data.
+   ====================================================================== */
+
+const TOURNAMENT = {
+  name: "North vs South — Box Office Cup",
+  start: "2026-09-10T19:30:00+01:00",
+  end:   "2026-09-10T23:00:00+01:00",
+  venue: {
+    name: "Encore Padel",
+    address: "Unit GH, Ventura Park, Radlett, St Albans, AL2 2DB"
+  },
+
+  // All confirmed players for the day. Once fixtures assign people to a
+  // side, you can add a `team: "north" | "south"` field to each entry.
+  players: [
+    "KC", "Kaz", "Erf", "Tom", "Osh", "Rishi", "Max", "Len"
+  ],
+
+  // Add one object per match once the fixture list arrives, e.g.:
+  // {
+  //   id: 1,
+  //   round: "Match 1",
+  //   time: "19:30",
+  //   court: "Court 1",
+  //   northPair: ["KC", "Tom"],
+  //   southPair: ["Osh", "Max"],
+  //   status: "final",        // "scheduled" | "final" | "draw"
+  //   sets: [[4,2], [3,4]],   // games per set, [north, south]
+  //   superTiebreak: [10,7]   // only if sets finished 1-1, else null/omit
+  // }
+  fixtures: []
+};
+
+/* ---------------------------------------------------------------------
+   Scoring engine
+   --------------------------------------------------------------------- */
+
+function scoreMatch(match) {
+  if (match.status === "scheduled") return null;
+
+  if (match.status === "draw") {
+    let northGames = 0, southGames = 0, northSets = 0, southSets = 0;
+    (match.sets || []).forEach(([n, s]) => {
+      northGames += n; southGames += s;
+      if (n > s) northSets++; else if (s > n) southSets++;
+    });
+    return { winner: null, northSets, southSets, northGames, southGames, northPts: 1, southPts: 1 };
+  }
+
+  // final
+  let northSets = 0, southSets = 0, northGames = 0, southGames = 0;
+  (match.sets || []).forEach(([n, s]) => {
+    northGames += n; southGames += s;
+    if (n > s) northSets++; else if (s > n) southSets++;
+  });
+
+  let winner;
+  if (match.superTiebreak) {
+    northGames += match.superTiebreak[0];
+    southGames += match.superTiebreak[1];
+    winner = match.superTiebreak[0] > match.superTiebreak[1] ? "north" : "south";
+  } else {
+    winner = northSets > southSets ? "north" : "south";
+  }
+
+  const loserWonSet = winner === "north" ? southSets > 0 : northSets > 0;
+  const northPts = winner === "north" ? 3 : (loserWonSet ? 1 : 0);
+  const southPts = winner === "south" ? 3 : (loserWonSet ? 1 : 0);
+
+  return { winner, northSets, southSets, northGames, southGames, northPts, southPts };
+}
+
+function computeStandings(fixtures) {
+  const t = {
+    north: { mp: 0, w: 0, d: 0, l: 0, sf: 0, sa: 0, gf: 0, ga: 0, pts: 0 },
+    south: { mp: 0, w: 0, d: 0, l: 0, sf: 0, sa: 0, gf: 0, ga: 0, pts: 0 }
+  };
+
+  fixtures.forEach(m => {
+    const r = scoreMatch(m);
+    if (!r) return;
+    t.north.mp++; t.south.mp++;
+    t.north.sf += r.northSets; t.north.sa += r.southSets;
+    t.south.sf += r.southSets; t.south.sa += r.northSets;
+    t.north.gf += r.northGames; t.north.ga += r.southGames;
+    t.south.gf += r.southGames; t.south.ga += r.northGames;
+    t.north.pts += r.northPts; t.south.pts += r.southPts;
+
+    if (r.winner === "north") { t.north.w++; t.south.l++; }
+    else if (r.winner === "south") { t.south.w++; t.north.l++; }
+    else { t.north.d++; t.south.d++; }
+  });
+
+  return t;
+}
+
+/* ---------------------------------------------------------------------
+   Rendering
+   --------------------------------------------------------------------- */
+
+function renderStandings() {
+  const t = computeStandings(TOURNAMENT.fixtures);
+  const rows = [
+    { key: "north", label: "North", cls: "north" },
+    { key: "south", label: "South", cls: "south" }
+  ].sort((a, b) => {
+    const A = t[a.key], B = t[b.key];
+    if (B.pts !== A.pts) return B.pts - A.pts;
+    const diffA = A.sf - A.sa, diffB = B.sf - B.sa;
+    return diffB - diffA;
+  });
+
+  const leaderPts = Math.max(t.north.pts, t.south.pts);
+  const tied = t.north.pts === t.south.pts;
+
+  const body = document.getElementById("standingsBody");
+  body.innerHTML = rows.map(r => {
+    const s = t[r.key];
+    const diff = s.sf - s.sa;
+    const diffCls = diff > 0 ? "diff-pos" : diff < 0 ? "diff-neg" : "";
+    const isLeader = !tied && s.pts === leaderPts && s.mp > 0;
+    return `
+      <tr class="${isLeader ? "leader-row" : ""}">
+        <td><div class="team-cell"><span class="swatch ${r.cls}"></span>${r.label}</div></td>
+        <td>${s.mp}</td>
+        <td>${s.w}</td>
+        <td>${s.d}</td>
+        <td>${s.l}</td>
+        <td class="${diffCls}">${s.sf}-${s.sa}</td>
+        <td>${s.gf}-${s.ga}</td>
+        <td class="pts">${s.pts}</td>
+      </tr>`;
+  }).join("");
+
+  const winningTeamEl = document.getElementById("winningTeam");
+  const allFinal = TOURNAMENT.fixtures.length > 0 && TOURNAMENT.fixtures.every(m => m.status !== "scheduled");
+  if (allFinal) {
+    if (t.north.pts === t.south.pts) {
+      winningTeamEl.textContent = "Drawn 🤝";
+      winningTeamEl.classList.remove("tbd");
+    } else {
+      winningTeamEl.textContent = t.north.pts > t.south.pts ? "North 🔵" : "South 🟠";
+      winningTeamEl.classList.remove("tbd");
+    }
+  }
+}
+
+function fixtureBadge(status) {
+  if (status === "final") return `<span class="fixture-badge final">Final</span>`;
+  if (status === "draw") return `<span class="fixture-badge draw">Draw</span>`;
+  return `<span class="fixture-badge scheduled">Upcoming</span>`;
+}
+
+function formatScoreline(match) {
+  const parts = (match.sets || []).map(([n, s]) => `${n}-${s}`);
+  if (match.superTiebreak) parts.push(`[${match.superTiebreak[0]}-${match.superTiebreak[1]}]`);
+  return parts.length ? parts.join(", ") : "—";
+}
+
+function renderFixtures() {
+  const container = document.getElementById("fixturesContainer");
+  const hint = document.getElementById("fixturesHint");
+
+  if (!TOURNAMENT.fixtures.length) {
+    hint.textContent = "";
+    container.innerHTML = `
+      <div class="card empty-state">
+        <div class="ico">🎾</div>
+        <h3>Fixtures coming soon</h3>
+        <p>Once the fixture list is confirmed, every match, pairing and result will show up here — and the league table above will update itself.</p>
+      </div>`;
+    return;
+  }
+
+  const played = TOURNAMENT.fixtures.filter(m => m.status !== "scheduled").length;
+  hint.textContent = `${played} / ${TOURNAMENT.fixtures.length} played`;
+
+  container.innerHTML = `<div class="fixtures-grid">` + TOURNAMENT.fixtures.map(m => `
+    <div class="card fixture-card">
+      <div class="fixture-top">
+        <span>${m.round || ("Match " + m.id)}${m.court ? " · " + m.court : ""}${m.time ? " · " + m.time : ""}</span>
+        ${fixtureBadge(m.status)}
+      </div>
+      <div class="fixture-sides">
+        <div class="fixture-side north">
+          <div class="fixture-pair">${(m.northPair || []).join(" / ")}</div>
+        </div>
+        <div class="fixture-score">${formatScoreline(m)}</div>
+        <div class="fixture-side south">
+          <div class="fixture-pair">${(m.southPair || []).join(" / ")}</div>
+        </div>
+      </div>
+    </div>
+  `).join("") + `</div>`;
+}
+
+function renderSquad() {
+  const grid = document.getElementById("squadGrid");
+  grid.innerHTML = TOURNAMENT.players.map(name => {
+    const initials = name.slice(0, 2).toUpperCase();
+    return `<div class="player-chip"><span class="player-avatar">${initials}</span><span class="name">${name}</span></div>`;
+  }).join("");
+}
+
+function renderStatusAndCountdown() {
+  const now = new Date();
+  const start = new Date(TOURNAMENT.start);
+  const end = new Date(TOURNAMENT.end);
+  const pill = document.getElementById("statusPill");
+  const text = document.getElementById("statusText");
+
+  let diff = start - now;
+  let phase = "upcoming";
+  if (now >= start && now <= end) phase = "live";
+  if (now > end) phase = "done";
+
+  pill.classList.remove("live", "done");
+  if (phase === "live") {
+    pill.classList.add("live");
+    text.textContent = "LIVE NOW";
+    diff = 0;
+  } else if (phase === "done") {
+    pill.classList.add("done");
+    text.textContent = "FULL TIME";
+    diff = 0;
+  } else {
+    text.textContent = "Upcoming";
+  }
+
+  const cd = document.getElementById("countdown");
+  if (phase !== "upcoming") {
+    cd.style.display = "none";
+    return;
+  }
+  cd.style.display = "flex";
+
+  const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+  const m = Math.floor((diff / (1000 * 60)) % 60);
+  const s = Math.floor((diff / 1000) % 60);
+
+  document.getElementById("cd-d").textContent = String(Math.max(d, 0)).padStart(2, "0");
+  document.getElementById("cd-h").textContent = String(Math.max(h, 0)).padStart(2, "0");
+  document.getElementById("cd-m").textContent = String(Math.max(m, 0)).padStart(2, "0");
+  document.getElementById("cd-s").textContent = String(Math.max(s, 0)).padStart(2, "0");
+}
+
+function init() {
+  renderStandings();
+  renderFixtures();
+  renderSquad();
+  renderStatusAndCountdown();
+  setInterval(renderStatusAndCountdown, 1000);
+}
+
+init();
+</script>
+</body>
+</html>
