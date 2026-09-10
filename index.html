@@ -286,6 +286,16 @@
   .field select:focus, .field input:focus{ outline:2px solid var(--olive); outline-offset:1px; }
   .form-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:20px; flex-wrap:wrap; }
   .set-block{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+  .toggle-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .radio-pill{
+    display:flex; align-items:center; gap:7px;
+    background: var(--bg-2); border:1px solid var(--border-strong);
+    border-radius:999px; padding:8px 14px; font-size:0.82rem;
+    color: var(--text-dim); cursor:pointer;
+    text-transform:none; letter-spacing:0; font-weight:600;
+  }
+  .radio-pill input{ width:auto; accent-color: var(--olive); }
+  .radio-pill:has(input:checked){ color: var(--text); border-color: var(--olive); background: rgba(138,154,91,0.12); }
 
   @media (max-width: 420px){
     .form-grid{ grid-template-columns: 1fr; }
@@ -554,25 +564,52 @@
             <option value="draw">Draw (unfinished / time cap)</option>
           </select>
         </div>
+
         <div class="field full">
-          <label>Set 1 (games)</label>
-          <div class="set-block">
-            <input type="number" id="f-s1n" min="0" placeholder="North">
-            <input type="number" id="f-s1s" min="0" placeholder="South">
+          <label>Scoring detail</label>
+          <div class="toggle-row">
+            <label class="radio-pill"><input type="radio" name="f-mode" id="f-mode-sets" value="sets" checked>Exact set scores</label>
+            <label class="radio-pill"><input type="radio" name="f-mode" id="f-mode-points" value="points">Just win / loss (no scores to hand)</label>
           </div>
         </div>
-        <div class="field full">
-          <label>Set 2 (games)</label>
-          <div class="set-block">
-            <input type="number" id="f-s2n" min="0" placeholder="North">
-            <input type="number" id="f-s2s" min="0" placeholder="South">
+
+        <div id="setsFields" class="form-grid full" style="display:contents;">
+          <div class="field full">
+            <label>Set 1 (games)</label>
+            <div class="set-block">
+              <input type="number" id="f-s1n" min="0" placeholder="North">
+              <input type="number" id="f-s1s" min="0" placeholder="South">
+            </div>
+          </div>
+          <div class="field full">
+            <label>Set 2 (games)</label>
+            <div class="set-block">
+              <input type="number" id="f-s2n" min="0" placeholder="North">
+              <input type="number" id="f-s2s" min="0" placeholder="South">
+            </div>
+          </div>
+          <div class="field full">
+            <label>Deciding breaker to 10 (only if one set all)</label>
+            <div class="set-block">
+              <input type="number" id="f-tbn" min="0" placeholder="North">
+              <input type="number" id="f-tbs" min="0" placeholder="South">
+            </div>
           </div>
         </div>
-        <div class="field full">
-          <label>Deciding breaker to 10 (only if one set all)</label>
-          <div class="set-block">
-            <input type="number" id="f-tbn" min="0" placeholder="North">
-            <input type="number" id="f-tbs" min="0" placeholder="South">
+
+        <div id="pointsFields" class="form-grid full" style="display:none;">
+          <div class="field">
+            <label for="f-winner">Winner</label>
+            <select id="f-winner">
+              <option value="north">North</option>
+              <option value="south">South</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-loserSet">Loser took a set?</label>
+            <label class="radio-pill" style="width:100%; justify-content:center;">
+              <input type="checkbox" id="f-loserSet" style="width:auto;">1 point (set taken)
+            </label>
           </div>
         </div>
       </div>
@@ -623,10 +660,12 @@ const TOURNAMENT = {
     address: "Unit GH, Ventura Park, Radlett, St Albans, AL2 2DB"
   },
 
-  // Confirmed South squad. Add the North squad here once it's known —
-  // both lists feed the Squad section and the player autocomplete in
-  // the Add/Edit Match form (which also accepts any name typed by hand).
-  northPlayers: [],
+  // Confirmed squads. Both lists feed the Squad section and the player
+  // autocomplete in the Add/Edit Match form (which also accepts any
+  // name typed by hand, so this list is a convenience, not a constraint).
+  northPlayers: [
+    "Baz", "Kie", "Jess", "Remmy", "Tyler", "Kay", "James", "Harry"
+  ],
   southPlayers: [
     "KC", "Kaz", "Erf", "Tom", "Osh", "Rishi", "Max", "Len"
   ],
@@ -664,16 +703,22 @@ function scoreMatch(match) {
   }
 
   // final
-  let winner;
+  let winner, loserWonSet;
   if (match.superTiebreak) {
     northGames += match.superTiebreak.n;
     southGames += match.superTiebreak.s;
     winner = match.superTiebreak.n > match.superTiebreak.s ? "north" : "south";
-  } else {
+    loserWonSet = winner === "north" ? southSets > 0 : northSets > 0;
+  } else if ((match.sets || []).length) {
     winner = northSets > southSets ? "north" : "south";
+    loserWonSet = winner === "north" ? southSets > 0 : northSets > 0;
+  } else {
+    // Points-only result: no set-by-set score was recorded, just who won
+    // and whether the loser took a set off them.
+    winner = match.winner;
+    loserWonSet = !!match.loserWonSet;
   }
 
-  const loserWonSet = winner === "north" ? southSets > 0 : northSets > 0;
   const northPts = winner === "north" ? 3 : (loserWonSet ? 1 : 0);
   const southPts = winner === "south" ? 3 : (loserWonSet ? 1 : 0);
 
@@ -762,9 +807,16 @@ function fixtureBadge(status) {
 }
 
 function formatScoreline(match) {
-  const parts = (match.sets || []).map(({ n, s }) => `${n}-${s}`);
-  if (match.superTiebreak) parts.push(`[${match.superTiebreak.n}-${match.superTiebreak.s}]`);
-  return parts.length ? parts.join(", ") : "—";
+  if ((match.sets || []).length) {
+    const parts = match.sets.map(({ n, s }) => `${n}-${s}`);
+    if (match.superTiebreak) parts.push(`[${match.superTiebreak.n}-${match.superTiebreak.s}]`);
+    return parts.join(", ");
+  }
+  if (match.status === "final" && match.winner) {
+    const r = scoreMatch(match);
+    return `${r.northPts}–${r.southPts} <span style="opacity:.55;font-size:.72em;">pts</span>`;
+  }
+  return "—";
 }
 
 function renderFixtures() {
@@ -912,19 +964,45 @@ function readSetPair(nId, sId) {
   return { n: Number(n), s: Number(s) };
 }
 
+function currentFormMode() {
+  return document.querySelector('input[name="f-mode"]:checked').value;
+}
+
+function setFormMode(mode) {
+  document.getElementById(mode === "points" ? "f-mode-points" : "f-mode-sets").checked = true;
+  document.getElementById("setsFields").style.display = mode === "points" ? "none" : "contents";
+  document.getElementById("pointsFields").style.display = mode === "points" ? "contents" : "none";
+}
+
 function matchFromForm() {
-  const sets = [];
-  const s1 = readSetPair("f-s1n", "f-s1s"); if (s1) sets.push(s1);
-  const s2 = readSetPair("f-s2n", "f-s2s"); if (s2) sets.push(s2);
-  return {
+  const base = {
     round: document.getElementById("f-round").value.trim() || "Match",
     court: document.getElementById("f-court").value.trim(),
     time: document.getElementById("f-time").value.trim(),
     northPair: [document.getElementById("f-north1").value, document.getElementById("f-north2").value],
     southPair: [document.getElementById("f-south1").value, document.getElementById("f-south2").value],
-    status: document.getElementById("f-status").value,
+    status: document.getElementById("f-status").value
+  };
+
+  if (currentFormMode() === "points") {
+    return {
+      ...base,
+      sets: [],
+      superTiebreak: null,
+      winner: document.getElementById("f-winner").value,
+      loserWonSet: document.getElementById("f-loserSet").checked
+    };
+  }
+
+  const sets = [];
+  const s1 = readSetPair("f-s1n", "f-s1s"); if (s1) sets.push(s1);
+  const s2 = readSetPair("f-s2n", "f-s2s"); if (s2) sets.push(s2);
+  return {
+    ...base,
     sets,
-    superTiebreak: readSetPair("f-tbn", "f-tbs")
+    superTiebreak: readSetPair("f-tbn", "f-tbs"),
+    winner: null,
+    loserWonSet: null
   };
 }
 
@@ -943,6 +1021,10 @@ function openModal(fixture) {
     document.getElementById("f-south1").value = (fixture.southPair || [])[0] || "";
     document.getElementById("f-south2").value = (fixture.southPair || [])[1] || "";
     document.getElementById("f-status").value = fixture.status || "scheduled";
+
+    const hasSets = (fixture.sets || []).length > 0;
+    setFormMode(hasSets ? "sets" : (fixture.winner ? "points" : "sets"));
+
     const [s1, s2] = fixture.sets || [];
     if (s1) { document.getElementById("f-s1n").value = s1.n; document.getElementById("f-s1s").value = s1.s; }
     if (s2) { document.getElementById("f-s2n").value = s2.n; document.getElementById("f-s2s").value = s2.s; }
@@ -950,8 +1032,11 @@ function openModal(fixture) {
       document.getElementById("f-tbn").value = fixture.superTiebreak.n;
       document.getElementById("f-tbs").value = fixture.superTiebreak.s;
     }
+    if (fixture.winner) document.getElementById("f-winner").value = fixture.winner;
+    document.getElementById("f-loserSet").checked = !!fixture.loserWonSet;
   } else {
     document.getElementById("f-status").value = "scheduled";
+    setFormMode("sets");
   }
   document.getElementById("matchModalOverlay").hidden = false;
 }
@@ -964,6 +1049,9 @@ function closeModal() {
 function wireModalEvents() {
   document.getElementById("openAddMatch").addEventListener("click", () => openModal(null));
   document.getElementById("cancelMatchBtn").addEventListener("click", closeModal);
+  document.querySelectorAll('input[name="f-mode"]').forEach(r => {
+    r.addEventListener("change", () => setFormMode(currentFormMode()));
+  });
   document.getElementById("matchModalOverlay").addEventListener("click", e => {
     if (e.target.id === "matchModalOverlay") closeModal();
   });
