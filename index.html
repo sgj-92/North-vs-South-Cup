@@ -193,7 +193,7 @@
 
   /* ---------- League table ---------- */
   .table-card{ padding: 6px; overflow-x:auto; }
-  table{ width:100%; border-collapse: collapse; min-width: 640px; }
+  table{ width:100%; border-collapse: collapse; }
   th, td{ padding: 16px 14px; text-align:center; font-size:0.92rem; }
   th{
     font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase;
@@ -215,6 +215,32 @@
     content: "▲ Leading";
     display:block; font-size:0.65rem; font-weight:700; color: var(--olive-light);
     letter-spacing:0.04em; margin-top:3px;
+  }
+
+  /* Below ~640px the 8-column table won't fit without scrolling, so each
+     row becomes a compact stat-grid card instead: Team + Pts on top,
+     MP/W/D/L/Sets/Games in a 3-column grid underneath. */
+  @media (max-width: 640px){
+    .table-card{ padding:0; background:none; border:none; box-shadow:none; overflow-x:visible; }
+    table{ display:block; }
+    thead{ display:none; }
+    tbody{ display:flex; flex-direction:column; gap:12px; }
+    tbody tr{
+      display:grid; grid-template-columns: repeat(3, 1fr);
+      gap: 12px 10px; border:none; border-radius: var(--radius);
+      background: var(--surface); box-shadow: var(--shadow);
+      padding: 18px 16px;
+    }
+    td{ display:block; padding:0; text-align:left; font-size:1rem; }
+    td::before{
+      content: attr(data-label);
+      display:block; font-size:0.64rem; font-weight:700; letter-spacing:0.06em;
+      text-transform:uppercase; color: var(--text-faint); margin-bottom:3px;
+    }
+    td:first-child{ grid-column: 1 / 3; order:-2; }
+    td:first-child::before{ content:none; }
+    td.pts{ grid-column: 3 / 4; text-align:right; font-size:1.3rem; order:-1; }
+    .leader-row td:first-child::after{ margin-top:6px; }
   }
 
   /* ---------- Fixtures ---------- */
@@ -812,13 +838,13 @@ function renderStandings() {
     return `
       <tr class="${isLeader ? "leader-row" : ""}">
         <td><div class="team-cell"><span class="swatch ${r.cls}"></span>${r.label}</div></td>
-        <td>${s.mp}</td>
-        <td>${s.w}</td>
-        <td>${s.d}</td>
-        <td>${s.l}</td>
-        <td class="${diffCls}">${s.sf}-${s.sa}</td>
-        <td>${s.gf}-${s.ga}</td>
-        <td class="pts">${s.pts}</td>
+        <td data-label="MP">${s.mp}</td>
+        <td data-label="W">${s.w}</td>
+        <td data-label="D">${s.d}</td>
+        <td data-label="L">${s.l}</td>
+        <td class="${diffCls}" data-label="Sets">${s.sf}-${s.sa}</td>
+        <td data-label="Games">${s.gf}-${s.ga}</td>
+        <td class="pts" data-label="Pts">${s.pts}</td>
       </tr>`;
   }).join("");
 
