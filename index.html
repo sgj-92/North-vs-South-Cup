@@ -162,6 +162,22 @@
     padding: 7px 13px; border-radius: 999px;
   }
 
+  .hero-info{ position:relative; margin-top: 24px; }
+  .hero-info summary{
+    cursor:pointer; list-style:none;
+    display:inline-flex; align-items:center; gap:8px;
+    background: rgba(10,14,10,0.55); border:1px solid var(--border-strong);
+    padding: 10px 18px; border-radius: 999px;
+    font-size:0.85rem; font-weight:700; color: var(--text-dim);
+    backdrop-filter: blur(6px);
+  }
+  .hero-info summary::-webkit-details-marker{ display:none; }
+  .hero-info summary::marker{ content:""; }
+  .hero-info summary:hover{ color: var(--text); border-color: var(--text-dim); }
+  .hero-info summary .chev{ transition: transform 0.2s; color: var(--olive-light); }
+  .hero-info[open] summary .chev{ transform: rotate(180deg); }
+  .hero-info-body{ margin-top:18px; }
+
   /* ---------- Section shell ---------- */
   section.block{ margin-top: 46px; }
   .block-head{
@@ -384,25 +400,30 @@
     <h1><span class="north">North</span><span class="vs">vs</span><span class="south">South</span></h1>
     <div class="subtitle">🏆 The Box Office Cup</div>
 
-    <div class="meta">
-      <div class="meta-chip">📅 <strong>Thursday 10 September</strong> · 7:30pm – 11:00pm</div>
-      <div class="meta-chip">📍 <a href="https://www.google.com/maps/search/?api=1&query=Encore%20Padel%2C%20Unit%20GH%2C%20Ventura%20Park%2C%20Radlett%2C%20St%20Albans%2C%20AL2%202DB" target="_blank" rel="noopener">Encore Padel, Radlett (AL2 2DB)</a></div>
-    </div>
+    <details class="hero-info">
+      <summary>Event details &amp; reminders <span class="chev">▾</span></summary>
+      <div class="hero-info-body">
+        <div class="meta">
+          <div class="meta-chip">📅 <strong>Thursday 10 September</strong> · 7:30pm – 11:00pm</div>
+          <div class="meta-chip">📍 <a href="https://www.google.com/maps/search/?api=1&query=Encore%20Padel%2C%20Unit%20GH%2C%20Ventura%20Park%2C%20Radlett%2C%20St%20Albans%2C%20AL2%202DB" target="_blank" rel="noopener">Encore Padel, Radlett (AL2 2DB)</a></div>
+        </div>
 
-    <div class="countdown" id="countdown">
-      <div class="cd-box"><div class="num" id="cd-d">--</div><div class="lbl">Days</div></div>
-      <div class="cd-box"><div class="num" id="cd-h">--</div><div class="lbl">Hours</div></div>
-      <div class="cd-box"><div class="num" id="cd-m">--</div><div class="lbl">Mins</div></div>
-      <div class="cd-box"><div class="num" id="cd-s">--</div><div class="lbl">Secs</div></div>
-    </div>
+        <div class="countdown" id="countdown">
+          <div class="cd-box"><div class="num" id="cd-d">--</div><div class="lbl">Days</div></div>
+          <div class="cd-box"><div class="num" id="cd-h">--</div><div class="lbl">Hours</div></div>
+          <div class="cd-box"><div class="num" id="cd-m">--</div><div class="lbl">Mins</div></div>
+          <div class="cd-box"><div class="num" id="cd-s">--</div><div class="lbl">Secs</div></div>
+        </div>
 
-    <div class="reminders">
-      <div class="reminder">🚨 Be on time</div>
-      <div class="reminder">🎾 Fast4 · Star Point (golden point after 2nd deuce)</div>
-      <div class="reminder">🤝 Rotating partners — 3 matches each</div>
-      <div class="reminder">👕 Money Padel tee — olive green</div>
-      <div class="reminder">🏆 Trophy + Best &amp; Worst Player</div>
-    </div>
+        <div class="reminders">
+          <div class="reminder">🚨 Be on time</div>
+          <div class="reminder">🎾 Fast4 · Star Point (golden point after 2nd deuce)</div>
+          <div class="reminder">🤝 Rotating partners — 3 matches each</div>
+          <div class="reminder">👕 Money Padel tee — olive green</div>
+          <div class="reminder">🏆 Trophy + Best &amp; Worst Player</div>
+        </div>
+      </div>
+    </details>
   </div>
 
   <!-- LEAGUE TABLE -->
@@ -724,9 +745,13 @@ function scoreMatch(match) {
     loserWonSet = winner === "north" ? southSets > 0 : northSets > 0;
   } else {
     // Points-only result: no set-by-set score was recorded, just who won
-    // and whether the loser took a set off them.
+    // and whether the loser took a set off them. A match win always means
+    // 2 sets won; a "loser took a set" means they won 1, otherwise 0.
     winner = match.winner;
     loserWonSet = !!match.loserWonSet;
+    const loserSets = loserWonSet ? 1 : 0;
+    if (winner === "north") { northSets = 2; southSets = loserSets; }
+    else if (winner === "south") { southSets = 2; northSets = loserSets; }
   }
 
   const northPts = winner === "north" ? 3 : (loserWonSet ? 1 : 0);
