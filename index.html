@@ -213,10 +213,20 @@
   .fixture-side{ flex:1; min-width:0; }
   .fixture-side.north{ text-align:left; }
   .fixture-side.south{ text-align:right; }
-  .fixture-pair{ font-weight:700; font-size:0.95rem; }
+  .fixture-pair{ font-weight:700; font-size:0.95rem; transition: opacity 0.15s; }
   .fixture-side.north .fixture-pair{ color: var(--north); }
   .fixture-side.south .fixture-pair{ color: var(--south); }
+  .fixture-side.won .fixture-pair{ font-weight:800; }
+  .fixture-side.lost .fixture-pair{ opacity:0.42; font-weight:600; }
   .fixture-score{ font-family:'Outfit',sans-serif; font-weight:800; font-size:1.1rem; color: var(--text-dim); white-space:nowrap; padding: 0 8px;}
+
+  .result-pill{
+    display:inline-block; font-size:0.6rem; font-weight:800; letter-spacing:0.04em;
+    padding:2px 6px; border-radius:999px; margin: 0 5px; vertical-align:middle;
+  }
+  .result-pill.win{ background: rgba(224,184,74,0.18); color: var(--gold); border:1px solid rgba(224,184,74,0.4); }
+  .result-pill.loss{ background: var(--surface-2); color: var(--text-faint); border:1px solid var(--border); }
+  .result-pill.draw{ background: var(--surface-2); color: var(--text-dim); border:1px solid var(--border-strong); }
 
   .empty-state{
     text-align:center; padding: 46px 24px; color: var(--text-dim);
@@ -837,7 +847,16 @@ function renderFixtures() {
   const played = TOURNAMENT.fixtures.filter(m => m.status !== "scheduled").length;
   hint.textContent = `${played} / ${TOURNAMENT.fixtures.length} played`;
 
-  container.innerHTML = `<div class="fixtures-grid">` + TOURNAMENT.fixtures.map(m => `
+  container.innerHTML = `<div class="fixtures-grid">` + TOURNAMENT.fixtures.map(m => {
+    const result = scoreMatch(m);
+    const sideState = side => !result ? "" : result.winner === side ? "won" : result.winner ? "lost" : "draw";
+    const sidePill = side => {
+      if (!result) return "";
+      if (result.winner === side) return `<span class="result-pill win">W</span>`;
+      if (result.winner) return `<span class="result-pill loss">L</span>`;
+      return `<span class="result-pill draw">D</span>`;
+    };
+    return `
     <div class="card fixture-card" data-id="${m.id}">
       <button class="fixture-delete" data-id="${m.id}" type="button" title="Delete match">✕</button>
       <div class="fixture-top">
@@ -845,16 +864,17 @@ function renderFixtures() {
         ${fixtureBadge(m.status)}
       </div>
       <div class="fixture-sides">
-        <div class="fixture-side north">
-          <div class="fixture-pair">${(m.northPair || []).filter(Boolean).join(" / ") || "TBC"}</div>
+        <div class="fixture-side north ${sideState("north")}">
+          <div class="fixture-pair">${(m.northPair || []).filter(Boolean).join(" / ") || "TBC"}${sidePill("north")}</div>
         </div>
         <div class="fixture-score">${formatScoreline(m)}</div>
-        <div class="fixture-side south">
-          <div class="fixture-pair">${(m.southPair || []).filter(Boolean).join(" / ") || "TBC"}</div>
+        <div class="fixture-side south ${sideState("south")}">
+          <div class="fixture-pair">${(m.southPair || []).filter(Boolean).join(" / ") || "TBC"}${sidePill("south")}</div>
         </div>
       </div>
     </div>
-  `).join("") + `</div>`;
+  `;
+  }).join("") + `</div>`;
 }
 
 function playerChip(name) {
