@@ -384,6 +384,17 @@
   .trophy-card h3{ font-size:0.95rem; margin: 10px 0 4px; color: var(--text-dim); font-weight:700; text-transform:uppercase; letter-spacing:0.04em; font-size:0.75rem;}
   .trophy-card .value{ font-family:'Outfit',sans-serif; font-weight:800; font-size:1.2rem; color: var(--gold); margin-top:4px; }
   .trophy-card .value.tbd{ color: var(--text-faint); font-weight:600; font-size:1rem; }
+  .trophy-note{ font-size:0.8rem; color: var(--text-faint); margin: 14px 2px 0; }
+
+  .final-banner{
+    margin-top: 20px; display:flex; align-items:center; gap:16px;
+    background: linear-gradient(135deg, rgba(224,184,74,0.16), rgba(138,154,91,0.12));
+    border:1px solid rgba(224,184,74,0.4); border-radius: var(--radius);
+    padding: 20px 24px; box-shadow: var(--shadow);
+  }
+  .final-banner-ico{ font-size:2.2rem; flex-shrink:0; }
+  .final-banner-eyebrow{ font-size:0.7rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color: var(--gold); }
+  .final-banner-text{ font-family:'Outfit',sans-serif; font-weight:800; font-size:1.2rem; margin-top:2px; }
 
   footer{ text-align:center; margin-top:54px; color: var(--text-faint); font-size:0.82rem; }
   footer .heart{ color: var(--south); }
@@ -436,6 +447,15 @@
         </div>
       </div>
     </details>
+  </div>
+
+  <!-- FINAL RESULT BANNER -->
+  <div id="finalBanner" class="final-banner" hidden>
+    <div class="final-banner-ico">🏆</div>
+    <div>
+      <div class="final-banner-eyebrow">Tournament complete</div>
+      <div class="final-banner-text" id="finalBannerText"></div>
+    </div>
   </div>
 
   <!-- LEAGUE TABLE -->
@@ -539,7 +559,10 @@
 
   <!-- TROPHY -->
   <section class="block" id="trophy">
-    <div class="block-head"><h2>Trophy Cabinet</h2></div>
+    <div class="block-head">
+      <h2>Trophy Cabinet</h2>
+      <button class="btn ghost" id="finishToggle" type="button">Mark tournament finished</button>
+    </div>
     <div class="trophy-grid">
       <div class="card trophy-card">
         <div class="ico">🏆</div>
@@ -549,14 +572,15 @@
       <div class="card trophy-card">
         <div class="ico">🌟</div>
         <h3>Best Player</h3>
-        <div class="value tbd">To be decided</div>
+        <div class="value tbd" id="bestPlayer">To be decided</div>
       </div>
       <div class="card trophy-card">
         <div class="ico">👀</div>
         <h3>Worst Player</h3>
-        <div class="value tbd">To be decided</div>
+        <div class="value tbd" id="worstPlayer">To be decided</div>
       </div>
     </div>
+    <p class="trophy-note" id="trophyNote">Best &amp; worst player are calculated automatically from match wins/losses once the tournament is marked finished.</p>
   </section>
 
   <footer>
@@ -677,7 +701,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
-  getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+  getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, setDoc,
   onSnapshot, query, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -693,6 +717,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const fixturesCol = collection(db, "fixtures");
+const tournamentStatusDoc = doc(db, "meta", "tournament");
 
 const TOURNAMENT = {
   name: "North vs South — Box Office Cup",
@@ -723,7 +748,10 @@ const TOURNAMENT = {
   //   sets: [{n:4,s:2}, {n:3,s:4}],
   //   superTiebreak: {n:10,s:7}  // only if sets finished 1-1, else null
   // }
-  fixtures: []
+  fixtures: [],
+
+  // Set from the "meta/tournament" Firestore doc — see subscribeTournamentStatus().
+  finished: false
 };
 
 let editingId = null;
@@ -834,16 +862,93 @@ function renderStandings() {
       </tr>`;
   }).join("");
 
-  const winningTeamEl = document.getElementById("winningTeam");
-  const allFinal = TOURNAMENT.fixtures.length > 0 && TOURNAMENT.fixtures.every(m => m.status !== "scheduled");
-  if (allFinal) {
-    if (t.north.pts === t.south.pts) {
-      winningTeamEl.textContent = "Drawn 🤝";
-      winningTeamEl.classList.remove("tbd");
+  renderTrophy(t);
+}
+
+/* ---------------------------------------------------------------------
+   Tournament finished flag + trophy cabinet
+   --------------------------------------------------------------------- */
+
+function computePlayerRecords(fixtures) {
+  const records = {};
+  const bump = (name, field) => {
+    if (!name) return;
+    if (!records[name]) records[name] = { wins: 0, losses: 0, draws: 0 };
+    records[name][field]++;
+  };
+  fixtures.forEach(m => {
+    const r = scoreMatch(m);
+    if (!r) return; // scheduled, no result yet
+    const northNames = (m.northPair || []).filter(Boolean);
+    const southNames = (m.southPair || []).filter(Boolean);
+    if (r.winner === "north") {
+      northNames.forEach(n => bump(n, "wins"));
+      southNames.forEach(n => bump(n, "losses"));
+    } else if (r.winner === "south") {
+      southNames.forEach(n => bump(n, "wins"));
+      northNames.forEach(n => bump(n, "losses"));
     } else {
-      winningTeamEl.textContent = t.north.pts > t.south.pts ? "North 🔵" : "South 🟠";
-      winningTeamEl.classList.remove("tbd");
+      northNames.concat(southNames).forEach(n => bump(n, "draws"));
     }
+  });
+  return records;
+}
+
+function bestAndWorstPlayers(records) {
+  const entries = Object.entries(records);
+  if (!entries.length) return { best: [], worst: [] };
+  const maxWins = Math.max(...entries.map(([, r]) => r.wins));
+  const maxLosses = Math.max(...entries.map(([, r]) => r.losses));
+  const best = maxWins > 0 ? entries.filter(([, r]) => r.wins === maxWins) : [];
+  const worst = maxLosses > 0 ? entries.filter(([, r]) => r.losses === maxLosses) : [];
+  return { best, worst };
+}
+
+function renderTrophy(t) {
+  const winningTeamEl = document.getElementById("winningTeam");
+  const bestPlayerEl = document.getElementById("bestPlayer");
+  const worstPlayerEl = document.getElementById("worstPlayer");
+  const banner = document.getElementById("finalBanner");
+  const bannerText = document.getElementById("finalBannerText");
+
+  if (!TOURNAMENT.finished) {
+    winningTeamEl.textContent = "To be decided";
+    winningTeamEl.classList.add("tbd");
+    bestPlayerEl.textContent = "To be decided";
+    bestPlayerEl.classList.add("tbd");
+    worstPlayerEl.textContent = "To be decided";
+    worstPlayerEl.classList.add("tbd");
+    banner.hidden = true;
+    return;
+  }
+
+  const drawn = t.north.pts === t.south.pts;
+  const winnerLabel = drawn ? "Drawn 🤝" : (t.north.pts > t.south.pts ? "North 🔵" : "South 🟠");
+  winningTeamEl.textContent = winnerLabel;
+  winningTeamEl.classList.remove("tbd");
+
+  banner.hidden = false;
+  bannerText.textContent = drawn
+    ? `It's a draw — North ${t.north.pts} pts, South ${t.south.pts} pts`
+    : `${t.north.pts > t.south.pts ? "North" : "South"} win the Box Office Cup, ${Math.max(t.north.pts, t.south.pts)}–${Math.min(t.north.pts, t.south.pts)}!`;
+
+  const records = computePlayerRecords(TOURNAMENT.fixtures);
+  const { best, worst } = bestAndWorstPlayers(records);
+
+  if (best.length) {
+    bestPlayerEl.textContent = best.map(([name, r]) => `${name} (${r.wins}W)`).join(" / ");
+    bestPlayerEl.classList.remove("tbd");
+  } else {
+    bestPlayerEl.textContent = "No results yet";
+    bestPlayerEl.classList.add("tbd");
+  }
+
+  if (worst.length) {
+    worstPlayerEl.textContent = worst.map(([name, r]) => `${name} (${r.losses}L)`).join(" / ");
+    worstPlayerEl.classList.remove("tbd");
+  } else {
+    worstPlayerEl.textContent = "No results yet";
+    worstPlayerEl.classList.add("tbd");
   }
 }
 
@@ -1012,6 +1117,34 @@ function subscribeFixtures() {
   });
 }
 
+function subscribeTournamentStatus() {
+  onSnapshot(tournamentStatusDoc, snap => {
+    TOURNAMENT.finished = !!(snap.exists() && snap.data().finished);
+    updateFinishToggleButton();
+    renderStandings();
+  }, err => {
+    console.error(err);
+  });
+}
+
+function updateFinishToggleButton() {
+  const btn = document.getElementById("finishToggle");
+  btn.textContent = TOURNAMENT.finished ? "Reopen tournament" : "Mark tournament finished";
+}
+
+async function toggleTournamentFinished() {
+  const next = !TOURNAMENT.finished;
+  if (next && !confirm("Mark the tournament finished? This locks in the winning team and best/worst player based on the current results.")) {
+    return;
+  }
+  try {
+    await setDoc(tournamentStatusDoc, { finished: next }, { merge: true });
+  } catch (err) {
+    console.error(err);
+    showSyncBanner("Couldn't update tournament status — check Firestore rules allow writes.");
+  }
+}
+
 async function handleDelete(id) {
   if (!confirm("Delete this match?")) return;
   try {
@@ -1174,7 +1307,9 @@ function init() {
   setInterval(renderStatusAndCountdown, 1000);
   wireModalEvents();
   wireFixtureCardEvents();
+  document.getElementById("finishToggle").addEventListener("click", toggleTournamentFinished);
   subscribeFixtures();
+  subscribeTournamentStatus();
 }
 
 init();
