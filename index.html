@@ -924,10 +924,28 @@ function hideSyncBanner() {
   document.getElementById("syncBanner").hidden = true;
 }
 
+function timeSortKey(time) {
+  const m = (time || "").match(/(\d{1,2}):(\d{2})/);
+  return m ? Number(m[1]) * 60 + Number(m[2]) : Infinity; // no time recorded -> sorts last
+}
+
+function courtSortKey(court) {
+  const m = (court || "").match(/\d+/);
+  return m ? Number(m[0]) : Infinity; // no court number -> sorts last
+}
+
+function sortFixtures(fixtures) {
+  return [...fixtures].sort((a, b) => {
+    const ta = timeSortKey(a.time), tb = timeSortKey(b.time);
+    if (ta !== tb) return ta - tb;
+    return courtSortKey(a.court) - courtSortKey(b.court);
+  });
+}
+
 function subscribeFixtures() {
   const q = query(fixturesCol, orderBy("createdAt", "asc"));
   onSnapshot(q, snap => {
-    TOURNAMENT.fixtures = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    TOURNAMENT.fixtures = sortFixtures(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     hideSyncBanner();
     renderStandings();
     renderFixtures();
