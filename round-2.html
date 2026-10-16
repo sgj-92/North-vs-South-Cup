@@ -242,6 +242,22 @@
 
   /* ---------- Fixtures ---------- */
   .fixtures-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap:14px; }
+  .round-group + .round-group{ margin-top:22px; }
+  .round-head{
+    display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    margin: 0 2px 10px; padding-bottom:8px; border-bottom:1px solid var(--border);
+  }
+  .round-head h3{ font-size:1.05rem; font-weight:800; }
+  .round-score{ font-size:0.8rem; font-weight:700; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+  .round-score .rs-n{ color: var(--north); }
+  .round-score .rs-s{ color: var(--south); }
+  .empty-actions{ margin-top:18px; display:flex; justify-content:center; }
+  .load-notice{
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    background: rgba(224,184,74,0.1); border:1px solid rgba(224,184,74,0.3);
+    border-radius: var(--radius-sm); padding:12px 16px; margin-bottom:16px;
+    font-size:0.88rem; color:#e2c05a;
+  }
   .fixture-card{ padding: 18px; display:flex; flex-direction:column; gap:12px; }
   .fixture-top{ padding-right:24px; display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color: var(--text-faint); font-weight:600; letter-spacing:0.03em; text-transform:uppercase;}
   .fixture-badge{ padding:3px 10px; border-radius:999px; font-size:0.68rem; font-weight:700; letter-spacing:0.03em; }
@@ -436,11 +452,6 @@
     display:flex; align-items:center; justify-content:center;
     font-size:0.72rem; font-weight:800; color:#111;
   }
-  .side-tag{
-    font-size:0.62rem; font-weight:700; letter-spacing:0.05em; text-transform:uppercase;
-    color: var(--text-faint); border:1px solid var(--border-strong);
-    padding:2px 7px; border-radius:999px; margin-left:2px;
-  }
   .player-chip span.name{ font-weight:600; font-size:0.9rem; }
 
   /* ---------- Trophy ---------- */
@@ -618,7 +629,7 @@
   <!-- SQUAD -->
   <section class="block" id="squad">
     <div class="block-head"><h2>Squad</h2></div>
-    <p class="squad-note">Six a side. South players are tagged with their preferred court side.</p>
+    <p class="squad-note">Six a side.</p>
     <div class="squad-columns">
       <div class="card squad-card">
         <div class="squad-card-head"><span class="swatch north"></span>North</div>
@@ -803,18 +814,13 @@ const TOURNAMENT = {
   // Confirmed squads. Both lists feed the Squad section and the player
   // autocomplete in the Add/Edit Match form (which also accepts any
   // name typed by hand, so this list is a convenience, not a constraint).
-  // `side` is the player's preferred court side (Right / Left / Either).
   northPlayers: [
     { name: "Ary" }, { name: "Hayes" }, { name: "Louis" },
     { name: "Laurence" }, { name: "Mulley" }, { name: "K" }
   ],
   southPlayers: [
-    { name: "Osh", side: "Right" },
-    { name: "Kaz", side: "Left" },
-    { name: "Erf", side: "Right" },
-    { name: "Kieron Cadogan", side: "Left" },
-    { name: "Rishi Wolf", side: "Either" },
-    { name: "Eli", side: "Either" }
+    { name: "Osh" }, { name: "Kaz" }, { name: "Erf" },
+    { name: "Kieron Cadogan" }, { name: "Rishi Wolf" }, { name: "Eli" }
   ],
 
   // Populated live from Firestore — see subscribeFixtures() below.
@@ -834,6 +840,51 @@ const TOURNAMENT = {
 };
 
 let editingId = null;
+
+// Tonight's fixture list (5 rounds x 3 courts). Fixed doc IDs make loading
+// idempotent: loading twice, or two people at once, can't create duplicates.
+const TONIGHT_FIXTURES = [
+  ["r1-c1", 1, 1, ["Ary", "Hayes"],      ["Kaz", "Osh"]],
+  ["r1-c2", 1, 2, ["Louis", "Laurence"], ["Kieron Cadogan", "Erf"]],
+  ["r1-c3", 1, 3, ["Mulley", "K"],       ["Rishi Wolf", "Eli"]],
+  ["r2-c1", 2, 1, ["Ary", "Louis"],      ["Kaz", "Erf"]],
+  ["r2-c2", 2, 2, ["Hayes", "Mulley"],   ["Kieron Cadogan", "Rishi Wolf"]],
+  ["r2-c3", 2, 3, ["Laurence", "K"],     ["Eli", "Osh"]],
+  ["r3-c1", 3, 1, ["Ary", "Laurence"],   ["Kieron Cadogan", "Osh"]],
+  ["r3-c2", 3, 2, ["Hayes", "K"],        ["Kaz", "Eli"]],
+  ["r3-c3", 3, 3, ["Louis", "Mulley"],   ["Rishi Wolf", "Erf"]],
+  ["r4-c1", 4, 1, ["Hayes", "Louis"],    ["Kaz", "Kieron Cadogan"]],
+  ["r4-c2", 4, 2, ["Ary", "K"],          ["Rishi Wolf", "Osh"]],
+  ["r4-c3", 4, 3, ["Laurence", "Mulley"],["Eli", "Erf"]],
+  ["r5-c1", 5, 1, ["Hayes", "Laurence"], ["Osh", "Erf"]],
+  ["r5-c2", 5, 2, ["Ary", "Mulley"],     ["Kaz", "Rishi Wolf"]],
+  ["r5-c3", 5, 3, ["Louis", "K"],        ["Kieron Cadogan", "Eli"]]
+].map(([id, round, court, northPair, southPair]) => ({
+  id, round: `Round ${round}`, court: `Court ${court}`, northPair, southPair
+}));
+
+function tonightsFixturesMissing() {
+  const ids = new Set(TOURNAMENT.fixtures.map(f => f.id));
+  return TONIGHT_FIXTURES.filter(f => !ids.has(f.id));
+}
+
+async function loadTonightsFixtures(btn) {
+  const missing = tonightsFixturesMissing();
+  if (!missing.length) return;
+  if (btn) { btn.disabled = true; btn.textContent = "Loading…"; }
+  try {
+    await Promise.all(missing.map(f => setDoc(doc(db, "round2_fixtures", f.id), {
+      round: f.round, court: f.court, time: "",
+      northPair: f.northPair, southPair: f.southPair,
+      status: "scheduled", sets: [], superTiebreak: null, winner: null, loserWonSet: null,
+      createdAt: serverTimestamp()
+    })));
+  } catch (err) {
+    console.error(err);
+    showSyncBanner("Couldn't load the fixtures — check the Firestore rules allow writes to round2_fixtures.");
+    if (btn) { btn.disabled = false; btn.textContent = "Try again"; }
+  }
+}
 
 function escapeHtml(str) {
   return String(str ?? "").replace(/[&<>"']/g, c =>
@@ -1073,9 +1124,43 @@ function formatScoreline(match) {
   return `<div class="score-games">${parts.join("&ensp;")}</div>${ptsLine}`;
 }
 
+function pairHtml(names) {
+  return escapeHtml((names || []).map(n => (n || "").trim()).filter(Boolean).join(" / ") || "TBC");
+}
+
+function fixtureCardHtml(m) {
+  const result = scoreMatch(m);
+  const sideState = side => !result ? "" : result.winner === side ? "won" : result.winner ? "lost" : "draw";
+  const sidePill = side => {
+    if (!result) return "";
+    if (result.winner === side) return `<span class="result-pill win">W</span>`;
+    if (result.winner) return `<span class="result-pill loss">L</span>`;
+    return `<span class="result-pill draw">D</span>`;
+  };
+  return `
+    <div class="card fixture-card" data-id="${escapeHtml(m.id)}">
+      <button class="fixture-delete" data-id="${escapeHtml(m.id)}" type="button" title="Delete match">✕</button>
+      <div class="fixture-top">
+        <span>${escapeHtml([m.court, m.time].filter(Boolean).join(" · ") || "Match")}</span>
+        ${fixtureBadge(m.status)}
+      </div>
+      <div class="fixture-sides">
+        <div class="fixture-side north ${sideState("north")}">
+          <div class="fixture-pair">${pairHtml(m.northPair)}${sidePill("north")}</div>
+        </div>
+        <div class="fixture-score">${formatScoreline(m)}</div>
+        <div class="fixture-side south ${sideState("south")}">
+          <div class="fixture-pair">${pairHtml(m.southPair)}${sidePill("south")}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
 function renderFixtures() {
   const container = document.getElementById("fixturesContainer");
   const hint = document.getElementById("fixturesHint");
+  const needsLoad = tonightsFixturesMissing().length === TONIGHT_FIXTURES.length;
+  const loadBtn = `<button class="btn" type="button" data-action="load-tonight">Load tonight's ${TONIGHT_FIXTURES.length} fixtures</button>`;
 
   if (!TOURNAMENT.fixtures.length) {
     hint.textContent = "";
@@ -1083,7 +1168,8 @@ function renderFixtures() {
       <div class="card empty-state">
         <div class="ico">🎾</div>
         <h3>No matches yet</h3>
-        <p>Hit "+ Add Match" above to log the fixture list — every match, pairing and result will show up here, and the league table above will update itself.</p>
+        <p>Load tonight's fixture list (5 rounds, 3 courts), then tap any match to enter its score. The league table updates itself.</p>
+        <div class="empty-actions">${loadBtn}</div>
       </div>`;
     return;
   }
@@ -1091,41 +1177,35 @@ function renderFixtures() {
   const played = TOURNAMENT.fixtures.filter(m => m.status !== "scheduled").length;
   hint.textContent = `${played} / ${TOURNAMENT.fixtures.length} played`;
 
-  container.innerHTML = `<div class="fixtures-grid">` + TOURNAMENT.fixtures.map(m => {
-    const result = scoreMatch(m);
-    const sideState = side => !result ? "" : result.winner === side ? "won" : result.winner ? "lost" : "draw";
-    const sidePill = side => {
-      if (!result) return "";
-      if (result.winner === side) return `<span class="result-pill win">W</span>`;
-      if (result.winner) return `<span class="result-pill loss">L</span>`;
-      return `<span class="result-pill draw">D</span>`;
-    };
+  const groups = [];
+  TOURNAMENT.fixtures.forEach(m => {
+    const key = m.round || "Other matches";
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) last.items.push(m); else groups.push({ key, items: [m] });
+  });
+
+  const notice = needsLoad
+    ? `<div class="load-notice"><span>Tonight's fixtures aren't loaded yet.</span>${loadBtn}</div>`
+    : "";
+
+  container.innerHTML = notice + groups.map(g => {
+    let n = 0, s = 0, done = 0;
+    g.items.forEach(m => { const r = scoreMatch(m); if (r) { n += r.northPts; s += r.southPts; done++; } });
+    const score = done
+      ? `<span class="round-score"><span class="rs-n">North ${n}</span> · <span class="rs-s">South ${s}</span></span>`
+      : `<span class="round-score">Not started</span>`;
     return `
-    <div class="card fixture-card" data-id="${escapeHtml(m.id)}">
-      <button class="fixture-delete" data-id="${escapeHtml(m.id)}" type="button" title="Delete match">✕</button>
-      <div class="fixture-top">
-        <span>${escapeHtml([m.round || "Match", m.court, m.time].filter(Boolean).join(" · "))}</span>
-        ${fixtureBadge(m.status)}
-      </div>
-      <div class="fixture-sides">
-        <div class="fixture-side north ${sideState("north")}">
-          <div class="fixture-pair">${escapeHtml((m.northPair || []).filter(Boolean).join(" / ") || "TBC")}${sidePill("north")}</div>
-        </div>
-        <div class="fixture-score">${formatScoreline(m)}</div>
-        <div class="fixture-side south ${sideState("south")}">
-          <div class="fixture-pair">${escapeHtml((m.southPair || []).filter(Boolean).join(" / ") || "TBC")}${sidePill("south")}</div>
-        </div>
-      </div>
-    </div>
-  `;
-  }).join("") + `</div>`;
+      <div class="round-group">
+        <div class="round-head"><h3>${escapeHtml(g.key)}</h3>${score}</div>
+        <div class="fixtures-grid">${g.items.map(fixtureCardHtml).join("")}</div>
+      </div>`;
+  }).join("");
 }
 
-function playerChip({ name, side }) {
+function playerChip({ name }) {
   const parts = name.trim().split(/\s+/);
   const initials = (parts.length > 1 ? parts[0][0] + parts[1][0] : name.slice(0, 2)).toUpperCase();
-  const sideTag = side ? `<span class="side-tag">${side}</span>` : "";
-  return `<div class="player-chip"><span class="player-avatar">${initials}</span><span class="name">${name}</span>${sideTag}</div>`;
+  return `<div class="player-chip"><span class="player-avatar">${initials}</span><span class="name">${name}</span></div>`;
 }
 
 function renderSquad() {
@@ -1204,6 +1284,8 @@ function sortFixtures(fixtures) {
   return [...fixtures].sort((a, b) => {
     const ta = timeSortKey(a.time), tb = timeSortKey(b.time);
     if (ta !== tb) return ta - tb;
+    const ra = courtSortKey(a.round), rb = courtSortKey(b.round);
+    if (ra !== rb) return ra - rb;
     return courtSortKey(a.court) - courtSortKey(b.court);
   });
 }
@@ -1462,6 +1544,8 @@ function wireModalEvents() {
 
 function wireFixtureCardEvents() {
   document.getElementById("fixturesContainer").addEventListener("click", e => {
+    const loadBtn = e.target.closest('[data-action="load-tonight"]');
+    if (loadBtn) { loadTonightsFixtures(loadBtn); return; }
     const delBtn = e.target.closest(".fixture-delete");
     if (delBtn) { handleDelete(delBtn.dataset.id); return; }
     const card = e.target.closest(".fixture-card");
