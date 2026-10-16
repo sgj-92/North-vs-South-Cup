@@ -266,8 +266,8 @@
   .fixture-badge.draw{ background: rgba(216,223,200,0.08); color: var(--text-dim); border:1px solid var(--border); }
   .fixture-sides{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
   .fixture-side{ flex:1; min-width:0; }
-  .fixture-side.north{ text-align:left; }
-  .fixture-side.south{ text-align:right; }
+  .fixture-side:first-child{ text-align:left; }
+  .fixture-side:last-child{ text-align:right; }
   .fixture-pair{ font-weight:700; font-size:0.95rem; transition: opacity 0.15s; }
   .fixture-side.north .fixture-pair{ color: var(--north); }
   .fixture-side.south .fixture-pair{ color: var(--south); }
@@ -488,7 +488,7 @@
   .fixture-card{ container-type: inline-size; }
   @container (max-width: 420px){
     .fixture-sides{ flex-direction:column; align-items:stretch; gap:6px; }
-    .fixture-side.south{ text-align:left; }
+    .fixture-side:last-child{ text-align:left; }
     .fixture-score{ align-self:center; padding: 4px 0; }
   }
 </style>
@@ -692,20 +692,20 @@
           <input type="text" id="f-time" placeholder="19:30">
         </div>
         <div class="field">
-          <label for="f-north1">North player 1</label>
-          <input type="text" id="f-north1" list="playerNames" placeholder="Type a name">
-        </div>
-        <div class="field">
-          <label for="f-north2">North player 2</label>
-          <input type="text" id="f-north2" list="playerNames" placeholder="Type a name">
-        </div>
-        <div class="field">
           <label for="f-south1">South player 1</label>
           <input type="text" id="f-south1" list="playerNames" placeholder="Type a name">
         </div>
         <div class="field">
           <label for="f-south2">South player 2</label>
           <input type="text" id="f-south2" list="playerNames" placeholder="Type a name">
+        </div>
+        <div class="field">
+          <label for="f-north1">North player 1</label>
+          <input type="text" id="f-north1" list="playerNames" placeholder="Type a name">
+        </div>
+        <div class="field">
+          <label for="f-north2">North player 2</label>
+          <input type="text" id="f-north2" list="playerNames" placeholder="Type a name">
         </div>
         <datalist id="playerNames"></datalist>
         <div class="field full">
@@ -719,20 +719,20 @@
         <div id="setsFields" class="field full">
           <div class="score-grid" role="group" aria-label="Score in games">
             <span></span>
-            <span class="sg-head north">North</span>
             <span class="sg-head south">South</span>
+            <span class="sg-head north">North</span>
 
-            <label class="sg-label" for="f-s1n">Set 1</label>
-            <input type="number" id="f-s1n" min="0" max="7" inputmode="numeric" aria-label="Set 1 North games">
+            <label class="sg-label" for="f-s1s">Set 1</label>
             <input type="number" id="f-s1s" min="0" max="7" inputmode="numeric" aria-label="Set 1 South games">
+            <input type="number" id="f-s1n" min="0" max="7" inputmode="numeric" aria-label="Set 1 North games">
 
-            <label class="sg-label" for="f-s2n">Set 2</label>
-            <input type="number" id="f-s2n" min="0" max="7" inputmode="numeric" aria-label="Set 2 North games">
+            <label class="sg-label" for="f-s2s">Set 2</label>
             <input type="number" id="f-s2s" min="0" max="7" inputmode="numeric" aria-label="Set 2 South games">
+            <input type="number" id="f-s2n" min="0" max="7" inputmode="numeric" aria-label="Set 2 North games">
 
-            <label class="sg-label" for="f-tbn">Breaker<small>to 10, if one set all</small></label>
-            <input type="number" id="f-tbn" min="0" inputmode="numeric" aria-label="Breaker North points">
+            <label class="sg-label" for="f-tbs">Breaker<small>to 10, if one set all</small></label>
             <input type="number" id="f-tbs" min="0" inputmode="numeric" aria-label="Breaker South points">
+            <input type="number" id="f-tbn" min="0" inputmode="numeric" aria-label="Breaker North points">
           </div>
         </div>
 
@@ -1147,14 +1147,14 @@ function formatScoreline(match) {
   if (!r) return `<div class="score-games score-vs">vs</div>`;
 
   const pts = (v, side) => `<span class="${r.winner === side ? "pts-win" : ""}">${v}</span>`;
-  const ptsLine = `<div class="score-pts">${pts(r.northPts, "north")}–${pts(r.southPts, "south")} pts</div>`;
+  const ptsLine = `<div class="score-pts">${pts(r.southPts, "south")}–${pts(r.northPts, "north")} pts</div>`;
 
   const sets = match.sets || [];
   if (!sets.length && !match.superTiebreak) {
     return `<div class="score-games score-result-only">Result only</div>${ptsLine}`;
   }
-  const parts = sets.map(({ n, s }) => `${n}-${s}`);
-  if (match.superTiebreak) parts.push(`[${match.superTiebreak.n}-${match.superTiebreak.s}]`);
+  const parts = sets.map(({ n, s }) => `${s}-${n}`);
+  if (match.superTiebreak) parts.push(`[${match.superTiebreak.s}-${match.superTiebreak.n}]`);
   return `<div class="score-games">${parts.join("&ensp;")}</div>${ptsLine}`;
 }
 
@@ -1179,12 +1179,12 @@ function fixtureCardHtml(m) {
         ${fixtureBadge(m.status)}
       </div>
       <div class="fixture-sides">
-        <div class="fixture-side north ${sideState("north")}">
-          <div class="fixture-pair">${pairHtml(m.northPair)}${sidePill("north")}</div>
-        </div>
-        <div class="fixture-score">${formatScoreline(m)}</div>
         <div class="fixture-side south ${sideState("south")}">
           <div class="fixture-pair">${pairHtml(m.southPair)}${sidePill("south")}</div>
+        </div>
+        <div class="fixture-score">${formatScoreline(m)}</div>
+        <div class="fixture-side north ${sideState("north")}">
+          <div class="fixture-pair">${pairHtml(m.northPair)}${sidePill("north")}</div>
         </div>
       </div>
     </div>`;
@@ -1226,7 +1226,7 @@ function renderFixtures() {
     let n = 0, s = 0, done = 0;
     g.items.forEach(m => { const r = scoreMatch(m); if (r) { n += r.northPts; s += r.southPts; done++; } });
     const score = done
-      ? `<span class="round-score"><span class="rs-n">North ${n}</span> · <span class="rs-s">South ${s}</span></span>`
+      ? `<span class="round-score"><span class="rs-s">South ${s}</span> · <span class="rs-n">North ${n}</span></span>`
       : `<span class="round-score">Not started</span>`;
     return `
       <div class="round-group">
@@ -1424,12 +1424,12 @@ function fast4Warnings(match) {
   const warnings = [];
   (match.sets || []).forEach(({ n, s }, i) => {
     const hi = Math.max(n, s), lo = Math.min(n, s);
-    if (hi !== 4 || lo > 3) warnings.push(`Set ${i + 1} (${n}-${s}) isn't a usual Fast4 score — first to 4, tiebreak at 3-3.`);
+    if (hi !== 4 || lo > 3) warnings.push(`Set ${i + 1} (${s}-${n}) isn't a usual Fast4 score — first to 4, tiebreak at 3-3.`);
   });
   const tb = match.superTiebreak;
   if (tb) {
     const hi = Math.max(tb.n, tb.s), lo = Math.min(tb.n, tb.s);
-    if (hi < 10 || hi - lo < 2) warnings.push(`Breaker (${tb.n}-${tb.s}) should be first to 10, won by 2.`);
+    if (hi < 10 || hi - lo < 2) warnings.push(`Breaker (${tb.s}-${tb.n}) should be first to 10, won by 2.`);
   }
   return warnings;
 }
@@ -1464,8 +1464,8 @@ function renderPointsPreview() {
 
   const warnings = currentFormMode() === "sets" ? fast4Warnings(m) : [];
   el.innerHTML =
-    team("north", "North", r.northPts) +
     team("south", "South", r.southPts) +
+    team("north", "North", r.northPts) +
     `<div class="pp-caption">${caption}</div>` +
     warnings.map(w => `<div class="pp-warn">⚠️ ${w}</div>`).join("");
 }
