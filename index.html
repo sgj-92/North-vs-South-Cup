@@ -162,6 +162,22 @@
     padding: 7px 13px; border-radius: 999px;
   }
 
+  .hero-info{ position:relative; margin-top: 24px; }
+  .hero-info summary{
+    cursor:pointer; list-style:none;
+    display:inline-flex; align-items:center; gap:8px;
+    background: rgba(10,14,10,0.55); border:1px solid var(--border-strong);
+    padding: 10px 18px; border-radius: 999px;
+    font-size:0.85rem; font-weight:700; color: var(--text-dim);
+    backdrop-filter: blur(6px);
+  }
+  .hero-info summary::-webkit-details-marker{ display:none; }
+  .hero-info summary::marker{ content:""; }
+  .hero-info summary:hover{ color: var(--text); border-color: var(--text-dim); }
+  .hero-info summary .chev{ transition: transform 0.2s; color: var(--olive-light); }
+  .hero-info[open] summary .chev{ transform: rotate(180deg); }
+  .hero-info-body{ margin-top:18px; }
+
   /* ---------- Section shell ---------- */
   section.block{ margin-top: 46px; }
   .block-head{
@@ -177,13 +193,13 @@
 
   /* ---------- League table ---------- */
   .table-card{ padding: 6px; overflow-x:auto; }
-  table{ width:100%; border-collapse: collapse; min-width: 640px; }
+  table{ width:100%; border-collapse: collapse; }
   th, td{ padding: 16px 14px; text-align:center; font-size:0.92rem; }
   th{
-    text-align:left; font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase;
+    font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase;
     color: var(--text-faint); font-weight:700; border-bottom: 1px solid var(--border);
   }
-  th:first-child, td:first-child{ text-align:left; }
+  td:first-child{ text-align:left; }
   th.pts, td.pts{ text-align:center; }
   tbody tr{ border-bottom: 1px solid var(--border); }
   tbody tr:last-child{ border-bottom:none; }
@@ -201,10 +217,22 @@
     letter-spacing:0.04em; margin-top:3px;
   }
 
+  /* Same table on every width, just tighter padding/type below ~460px
+     so all 8 columns fit without horizontal scrolling. */
+  @media (max-width: 460px){
+    .table-card{ padding:2px; }
+    th, td{ padding: 12px 4px; font-size:0.78rem; }
+    th{ font-size:0.58rem; letter-spacing:0.03em; }
+    .team-cell{ gap:6px; font-size:0.85rem; }
+    .swatch{ width:9px; height:9px; }
+    td.pts{ font-size:0.95rem; }
+    .leader-row td:first-child::after{ font-size:0.56rem; }
+  }
+
   /* ---------- Fixtures ---------- */
   .fixtures-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap:14px; }
   .fixture-card{ padding: 18px; display:flex; flex-direction:column; gap:12px; }
-  .fixture-top{ display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color: var(--text-faint); font-weight:600; letter-spacing:0.03em; text-transform:uppercase;}
+  .fixture-top{ padding-right:24px; display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color: var(--text-faint); font-weight:600; letter-spacing:0.03em; text-transform:uppercase;}
   .fixture-badge{ padding:3px 10px; border-radius:999px; font-size:0.68rem; font-weight:700; letter-spacing:0.03em; }
   .fixture-badge.scheduled{ background: var(--surface-2); color: var(--text-dim); border:1px solid var(--border); }
   .fixture-badge.final{ background: rgba(224,184,74,0.14); color: var(--gold); border:1px solid rgba(224,184,74,0.3); }
@@ -213,10 +241,20 @@
   .fixture-side{ flex:1; min-width:0; }
   .fixture-side.north{ text-align:left; }
   .fixture-side.south{ text-align:right; }
-  .fixture-pair{ font-weight:700; font-size:0.95rem; }
+  .fixture-pair{ font-weight:700; font-size:0.95rem; transition: opacity 0.15s; }
   .fixture-side.north .fixture-pair{ color: var(--north); }
   .fixture-side.south .fixture-pair{ color: var(--south); }
+  .fixture-side.won .fixture-pair{ font-weight:800; }
+  .fixture-side.lost .fixture-pair{ opacity:0.42; font-weight:600; }
   .fixture-score{ font-family:'Outfit',sans-serif; font-weight:800; font-size:1.1rem; color: var(--text-dim); white-space:nowrap; padding: 0 8px;}
+
+  .result-pill{
+    display:inline-block; font-size:0.6rem; font-weight:800; letter-spacing:0.04em;
+    padding:2px 6px; border-radius:999px; margin: 0 5px; vertical-align:middle;
+  }
+  .result-pill.win{ background: rgba(224,184,74,0.18); color: var(--gold); border:1px solid rgba(224,184,74,0.4); }
+  .result-pill.loss{ background: var(--surface-2); color: var(--text-faint); border:1px solid var(--border); }
+  .result-pill.draw{ background: var(--surface-2); color: var(--text-dim); border:1px solid var(--border-strong); }
 
   .empty-state{
     text-align:center; padding: 46px 24px; color: var(--text-dim);
@@ -224,6 +262,82 @@
   .empty-state .ico{ font-size:2rem; margin-bottom:10px; }
   .empty-state h3{ font-size:1.1rem; margin-bottom:6px; }
   .empty-state p{ font-size:0.9rem; color: var(--text-faint); max-width:420px; margin: 0 auto; }
+
+  /* ---------- Buttons & live-sync banner ---------- */
+  .btn{
+    display:inline-flex; align-items:center; gap:6px;
+    background: var(--olive-dark); color:#eef2e2; border:1px solid var(--olive);
+    font-weight:700; font-size:0.85rem; padding:9px 16px; border-radius:999px;
+    cursor:pointer; transition: background 0.15s, transform 0.1s; font-family:inherit;
+  }
+  .btn:hover{ background: var(--olive); }
+  .btn:active{ transform: scale(0.97); }
+  .btn.ghost{ background: transparent; color: var(--text-dim); border-color: var(--border-strong); }
+  .btn.ghost:hover{ color: var(--text); border-color: var(--text-dim); }
+  .btn.danger{ background: transparent; color:#e28a7a; border-color: rgba(226,104,62,0.4); }
+  .btn.danger:hover{ background: rgba(226,104,62,0.12); }
+
+  .fixtures-head-right{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+
+  .sync-banner{
+    display:flex; align-items:center; gap:8px;
+    font-size:0.85rem; color:#e2c05a; background: rgba(224,184,74,0.1);
+    border:1px solid rgba(224,184,74,0.3); border-radius: var(--radius-sm);
+    padding:12px 16px; margin-bottom:14px;
+  }
+  .sync-banner[hidden]{ display:none; }
+
+  /* ---------- Match modal ---------- */
+  .fixture-card{ position:relative; cursor:pointer; transition: border-color 0.15s, transform 0.15s; }
+  .fixture-card:hover{ border-color: var(--border-strong); transform: translateY(-2px); }
+  .fixture-delete{
+    position:absolute; top:10px; right:10px;
+    width:24px; height:24px; border-radius:50%;
+    background: var(--surface-2); border:1px solid var(--border);
+    color: var(--text-faint); font-size:0.75rem; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .fixture-delete:hover{ color:#e28a7a; border-color: rgba(226,104,62,0.4); }
+
+  .modal-overlay{
+    position:fixed; inset:0; background: rgba(5,7,5,0.72);
+    display:flex; align-items:center; justify-content:center;
+    padding:20px; z-index:100; backdrop-filter: blur(3px);
+  }
+  .modal-overlay[hidden]{ display:none; }
+  .modal{
+    background: var(--surface); border:1px solid var(--border-strong);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    width:100%; max-width:520px; max-height:88vh; overflow-y:auto;
+    padding:26px;
+  }
+  .modal h3{ font-size:1.15rem; margin-bottom:18px; }
+  .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .form-grid .full{ grid-column:1/-1; }
+  .field label{ display:block; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; color: var(--text-faint); margin-bottom:5px; font-weight:700; }
+  .field select, .field input{
+    width:100%; background: var(--bg-2); border:1px solid var(--border-strong);
+    color: var(--text); border-radius:8px; padding:9px 10px; font-size:0.9rem;
+    font-family:inherit;
+  }
+  .field select:focus, .field input:focus{ outline:2px solid var(--olive); outline-offset:1px; }
+  .form-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:20px; flex-wrap:wrap; }
+  .set-block{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+  .toggle-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .radio-pill{
+    display:flex; align-items:center; gap:7px;
+    background: var(--bg-2); border:1px solid var(--border-strong);
+    border-radius:999px; padding:8px 14px; font-size:0.82rem;
+    color: var(--text-dim); cursor:pointer;
+    text-transform:none; letter-spacing:0; font-weight:600;
+  }
+  .radio-pill input{ width:auto; accent-color: var(--olive); }
+  .radio-pill:has(input:checked){ color: var(--text); border-color: var(--olive); background: rgba(138,154,91,0.12); }
+
+  @media (max-width: 420px){
+    .form-grid{ grid-template-columns: 1fr; }
+  }
 
   /* ---------- Rules ---------- */
   .rules-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(230px,1fr)); gap:14px; }
@@ -244,7 +358,12 @@
 
   /* ---------- Squad ---------- */
   .squad-note{ font-size:0.85rem; color: var(--text-faint); margin: -6px 0 16px; }
+  .squad-columns{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
+  .squad-card{ padding:20px; }
+  .squad-card-head{ display:flex; align-items:center; gap:10px; font-weight:800; font-size:1.05rem; margin-bottom:14px; }
+  .squad-empty{ font-size:0.85rem; color: var(--text-faint); }
   .squad-grid{ display:flex; flex-wrap:wrap; gap:10px; }
+  @media (max-width: 560px){ .squad-columns{ grid-template-columns: 1fr; } }
   .player-chip{
     display:flex; align-items:center; gap:9px;
     background: var(--surface-2); border:1px solid var(--border);
@@ -265,9 +384,34 @@
   .trophy-card h3{ font-size:0.95rem; margin: 10px 0 4px; color: var(--text-dim); font-weight:700; text-transform:uppercase; letter-spacing:0.04em; font-size:0.75rem;}
   .trophy-card .value{ font-family:'Outfit',sans-serif; font-weight:800; font-size:1.2rem; color: var(--gold); margin-top:4px; }
   .trophy-card .value.tbd{ color: var(--text-faint); font-weight:600; font-size:1rem; }
+  .trophy-note{ font-size:0.8rem; color: var(--text-faint); margin: 14px 2px 0; }
+
+  .final-banner{
+    margin-top: 20px; display:flex; align-items:center; gap:16px;
+    background: linear-gradient(135deg, rgba(224,184,74,0.16), rgba(138,154,91,0.12));
+    border:1px solid rgba(224,184,74,0.4); border-radius: var(--radius);
+    padding: 20px 24px; box-shadow: var(--shadow);
+  }
+  .final-banner-ico{ font-size:2.2rem; flex-shrink:0; }
+  .final-banner-eyebrow{ font-size:0.7rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color: var(--gold); }
+  .final-banner-text{ font-family:'Outfit',sans-serif; font-weight:800; font-size:1.2rem; margin-top:2px; }
 
   footer{ text-align:center; margin-top:54px; color: var(--text-faint); font-size:0.82rem; }
   footer .heart{ color: var(--south); }
+  footer a{ color: var(--olive-light); text-decoration:none; font-weight:600; }
+  .next-round{
+    display:flex; align-items:center; gap:10px; margin-bottom:12px;
+    padding:12px 16px; border-radius: var(--radius-sm);
+    background: rgba(224,184,74,0.1); border:1px solid rgba(224,184,74,0.35);
+    color: var(--text); text-decoration:none; font-size:0.88rem; font-weight:600;
+  }
+  .next-round:hover{ border-color: var(--gold); }
+  .next-round > span:nth-child(2){ flex:1; }
+  .next-round-tag{
+    font-size:0.66rem; font-weight:800; letter-spacing:0.06em; text-transform:uppercase;
+    color:#1a1a10; background: var(--gold); padding:3px 8px; border-radius:999px; flex-shrink:0;
+  }
+  footer a:hover{ text-decoration:underline; }
 
   @media (max-width: 560px){
     .hero{ padding: 34px 18px; }
@@ -287,30 +431,50 @@
     <div id="statusPill" class="status-pill"><span class="status-dot"></span><span id="statusText">Loading…</span></div>
   </div>
 
+  <a class="next-round" href="round-2.html">
+    <span class="next-round-tag">Round 2</span>
+    <span>Fri 16 Oct · PadelHub Epsom — open the Round 2 tracker</span>
+    <span aria-hidden="true">→</span>
+  </a>
+
   <!-- HERO -->
   <div class="hero">
     <div class="eyebrow">Padel • Team Tournament</div>
     <h1><span class="north">North</span><span class="vs">vs</span><span class="south">South</span></h1>
     <div class="subtitle">🏆 The Box Office Cup</div>
 
-    <div class="meta">
-      <div class="meta-chip">📅 <strong>Thursday 10 September</strong> · 7:30pm – 11:00pm</div>
-      <div class="meta-chip">📍 <a href="https://www.google.com/maps/search/?api=1&query=Encore%20Padel%2C%20Unit%20GH%2C%20Ventura%20Park%2C%20Radlett%2C%20St%20Albans%2C%20AL2%202DB" target="_blank" rel="noopener">Encore Padel, Radlett (AL2 2DB)</a></div>
-    </div>
+    <details class="hero-info">
+      <summary>Event details &amp; reminders <span class="chev">▾</span></summary>
+      <div class="hero-info-body">
+        <div class="meta">
+          <div class="meta-chip">📅 <strong>Thursday 10 September</strong> · 7:30pm – 11:00pm</div>
+          <div class="meta-chip">📍 <a href="https://www.google.com/maps/search/?api=1&query=Encore%20Padel%2C%20Unit%20GH%2C%20Ventura%20Park%2C%20Radlett%2C%20St%20Albans%2C%20AL2%202DB" target="_blank" rel="noopener">Encore Padel, Radlett (AL2 2DB)</a></div>
+        </div>
 
-    <div class="countdown" id="countdown">
-      <div class="cd-box"><div class="num" id="cd-d">--</div><div class="lbl">Days</div></div>
-      <div class="cd-box"><div class="num" id="cd-h">--</div><div class="lbl">Hours</div></div>
-      <div class="cd-box"><div class="num" id="cd-m">--</div><div class="lbl">Mins</div></div>
-      <div class="cd-box"><div class="num" id="cd-s">--</div><div class="lbl">Secs</div></div>
-    </div>
+        <div class="countdown" id="countdown">
+          <div class="cd-box"><div class="num" id="cd-d">--</div><div class="lbl">Days</div></div>
+          <div class="cd-box"><div class="num" id="cd-h">--</div><div class="lbl">Hours</div></div>
+          <div class="cd-box"><div class="num" id="cd-m">--</div><div class="lbl">Mins</div></div>
+          <div class="cd-box"><div class="num" id="cd-s">--</div><div class="lbl">Secs</div></div>
+        </div>
 
-    <div class="reminders">
-      <div class="reminder">🚨 Be on time</div>
-      <div class="reminder">🎾 Fast4 · Star Point (golden point after 2nd deuce)</div>
-      <div class="reminder">🤝 Rotating partners — 3 matches each</div>
-      <div class="reminder">👕 Money Padel tee — olive green</div>
-      <div class="reminder">🏆 Trophy + Best &amp; Worst Player</div>
+        <div class="reminders">
+          <div class="reminder">🚨 Be on time</div>
+          <div class="reminder">🎾 Fast4 · Star Point (golden point after 2nd deuce)</div>
+          <div class="reminder">🤝 Rotating partners — 3 matches each</div>
+          <div class="reminder">👕 Money Padel tee — olive green</div>
+          <div class="reminder">🏆 Trophy + Best &amp; Worst Player</div>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- FINAL RESULT BANNER -->
+  <div id="finalBanner" class="final-banner" hidden>
+    <div class="final-banner-ico">🏆</div>
+    <div>
+      <div class="final-banner-eyebrow">Tournament complete</div>
+      <div class="final-banner-text" id="finalBannerText"></div>
     </div>
   </div>
 
@@ -343,7 +507,13 @@
   <section class="block" id="fixtures">
     <div class="block-head">
       <h2>Fixtures &amp; Results</h2>
-      <span class="hint" id="fixturesHint"></span>
+      <div class="fixtures-head-right">
+        <span class="hint" id="fixturesHint"></span>
+        <button class="btn" id="openAddMatch" type="button">+ Add Match</button>
+      </div>
+    </div>
+    <div id="syncBanner" class="sync-banner" hidden>
+      <span>⚠️</span><span id="syncBannerText">Live sync unavailable.</span>
     </div>
     <div id="fixturesContainer"></div>
   </section>
@@ -394,15 +564,25 @@
   <!-- SQUAD -->
   <section class="block" id="squad">
     <div class="block-head"><h2>Squad</h2></div>
-    <p class="squad-note">Confirmed players — team &amp; pairing assignments will populate here once the fixture list is in.</p>
-    <div class="card" style="padding:22px;">
-      <div class="squad-grid" id="squadGrid"></div>
+    <p class="squad-note">South squad confirmed. North squad TBD — add players in the code once known.</p>
+    <div class="squad-columns">
+      <div class="card squad-card">
+        <div class="squad-card-head"><span class="swatch north"></span>North</div>
+        <div class="squad-grid" id="squadGridNorth"></div>
+      </div>
+      <div class="card squad-card">
+        <div class="squad-card-head"><span class="swatch south"></span>South</div>
+        <div class="squad-grid" id="squadGridSouth"></div>
+      </div>
     </div>
   </section>
 
   <!-- TROPHY -->
   <section class="block" id="trophy">
-    <div class="block-head"><h2>Trophy Cabinet</h2></div>
+    <div class="block-head">
+      <h2>Trophy Cabinet</h2>
+      <button class="btn ghost" id="finishToggle" type="button">Mark tournament finished</button>
+    </div>
     <div class="trophy-grid">
       <div class="card trophy-card">
         <div class="ico">🏆</div>
@@ -412,28 +592,152 @@
       <div class="card trophy-card">
         <div class="ico">🌟</div>
         <h3>Best Player</h3>
-        <div class="value tbd">To be decided</div>
+        <div class="value tbd" id="bestPlayer">To be decided</div>
       </div>
       <div class="card trophy-card">
         <div class="ico">👀</div>
         <h3>Worst Player</h3>
-        <div class="value tbd">To be decided</div>
+        <div class="value tbd" id="worstPlayer">To be decided</div>
       </div>
     </div>
+    <p class="trophy-note" id="trophyNote">Best &amp; worst player are calculated automatically from match wins/losses once the tournament is marked finished.</p>
   </section>
 
   <footer>
-    Built for the North vs South Box Office Cup <span class="heart">♥</span> Let's go to war.
+    Built for the North vs South Box Office Cup <span class="heart">♥</span> Let's go to war. · <a href="round-2.html">Round 2 →</a>
   </footer>
 </div>
 
-<script>
+<!-- ADD / EDIT MATCH MODAL -->
+<div class="modal-overlay" id="matchModalOverlay" hidden>
+  <div class="modal">
+    <h3 id="matchModalTitle">Add Match</h3>
+    <form id="matchForm">
+      <div class="form-grid">
+        <div class="field full">
+          <label for="f-round">Match label</label>
+          <input type="text" id="f-round" placeholder="Match 1" required>
+        </div>
+        <div class="field">
+          <label for="f-court">Court</label>
+          <input type="text" id="f-court" placeholder="Court 1">
+        </div>
+        <div class="field">
+          <label for="f-time">Time</label>
+          <input type="text" id="f-time" placeholder="19:30">
+        </div>
+        <div class="field">
+          <label for="f-north1">North player 1</label>
+          <input type="text" id="f-north1" list="playerNames" placeholder="Type a name">
+        </div>
+        <div class="field">
+          <label for="f-north2">North player 2</label>
+          <input type="text" id="f-north2" list="playerNames" placeholder="Type a name">
+        </div>
+        <div class="field">
+          <label for="f-south1">South player 1</label>
+          <input type="text" id="f-south1" list="playerNames" placeholder="Type a name">
+        </div>
+        <div class="field">
+          <label for="f-south2">South player 2</label>
+          <input type="text" id="f-south2" list="playerNames" placeholder="Type a name">
+        </div>
+        <datalist id="playerNames"></datalist>
+        <div class="field full">
+          <label for="f-status">Status</label>
+          <select id="f-status">
+            <option value="scheduled">Scheduled</option>
+            <option value="final">Final</option>
+            <option value="draw">Draw (unfinished / time cap)</option>
+          </select>
+        </div>
+
+        <div class="field full">
+          <label>Scoring detail</label>
+          <div class="toggle-row">
+            <label class="radio-pill"><input type="radio" name="f-mode" id="f-mode-sets" value="sets" checked>Exact set scores</label>
+            <label class="radio-pill"><input type="radio" name="f-mode" id="f-mode-points" value="points">Just win / loss (no scores to hand)</label>
+          </div>
+        </div>
+
+        <div id="setsFields" class="form-grid full" style="display:contents;">
+          <div class="field full">
+            <label>Set 1 (games)</label>
+            <div class="set-block">
+              <input type="number" id="f-s1n" min="0" placeholder="North">
+              <input type="number" id="f-s1s" min="0" placeholder="South">
+            </div>
+          </div>
+          <div class="field full">
+            <label>Set 2 (games)</label>
+            <div class="set-block">
+              <input type="number" id="f-s2n" min="0" placeholder="North">
+              <input type="number" id="f-s2s" min="0" placeholder="South">
+            </div>
+          </div>
+          <div class="field full">
+            <label>Deciding breaker to 10 (only if one set all)</label>
+            <div class="set-block">
+              <input type="number" id="f-tbn" min="0" placeholder="North">
+              <input type="number" id="f-tbs" min="0" placeholder="South">
+            </div>
+          </div>
+        </div>
+
+        <div id="pointsFields" class="form-grid full" style="display:none;">
+          <div class="field">
+            <label for="f-winner">Winner</label>
+            <select id="f-winner">
+              <option value="north">North</option>
+              <option value="south">South</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-loserSet">Loser took a set?</label>
+            <label class="radio-pill" style="width:100%; justify-content:center;">
+              <input type="checkbox" id="f-loserSet" style="width:auto;">1 point (set taken)
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn danger" id="deleteMatchBtn" hidden>Delete</button>
+        <button type="button" class="btn ghost" id="cancelMatchBtn">Cancel</button>
+        <button type="submit" class="btn">Save Match</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script type="module">
 /* ======================================================================
    TOURNAMENT DATA
-   Edit PLAYERS and FIXTURES below once the fixture list is confirmed.
-   Everything else (league table, fixture cards, status pill, countdown)
-   recalculates automatically from this data.
+   `players` is the confirmed squad for the day — edit it directly.
+   `fixtures` is no longer edited by hand: it's synced live from the
+   "fixtures" collection in Firestore. Use the "+ Add Match" button (or
+   click any fixture card) to create/edit matches from the page itself —
+   every open tab updates instantly via onSnapshot.
    ====================================================================== */
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, setDoc,
+  onSnapshot, query, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCt4IHRj-uCzftm6_CZQTmG-pZeEf2Co2E",
+  authDomain: "north-vs-south-9d931.firebaseapp.com",
+  projectId: "north-vs-south-9d931",
+  storageBucket: "north-vs-south-9d931.firebasestorage.app",
+  messagingSenderId: "357512742443",
+  appId: "1:357512742443:web:32b82a7f6b19aef8f48c6e"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const fixturesCol = collection(db, "fixtures");
+const tournamentStatusDoc = doc(db, "meta", "tournament");
 
 const TOURNAMENT = {
   name: "North vs South — Box Office Cup",
@@ -444,26 +748,33 @@ const TOURNAMENT = {
     address: "Unit GH, Ventura Park, Radlett, St Albans, AL2 2DB"
   },
 
-  // All confirmed players for the day. Once fixtures assign people to a
-  // side, you can add a `team: "north" | "south"` field to each entry.
-  players: [
+  // Confirmed squads. Both lists feed the Squad section and the player
+  // autocomplete in the Add/Edit Match form (which also accepts any
+  // name typed by hand, so this list is a convenience, not a constraint).
+  northPlayers: [
+    "Baz", "Kie", "Jess", "Remmy", "Tyler", "Kay", "James", "Harry"
+  ],
+  southPlayers: [
     "KC", "Kaz", "Erf", "Tom", "Osh", "Rishi", "Max", "Len"
   ],
 
-  // Add one object per match once the fixture list arrives, e.g.:
+  // Populated live from Firestore — see subscribeFixtures() below.
+  // Match shape once loaded:
   // {
-  //   id: 1,
-  //   round: "Match 1",
-  //   time: "19:30",
-  //   court: "Court 1",
-  //   northPair: ["KC", "Tom"],
-  //   southPair: ["Osh", "Max"],
-  //   status: "final",        // "scheduled" | "final" | "draw"
-  //   sets: [[4,2], [3,4]],   // games per set, [north, south]
-  //   superTiebreak: [10,7]   // only if sets finished 1-1, else null/omit
+  //   id: "<firestore doc id>",
+  //   round: "Match 1", time: "19:30", court: "Court 1",
+  //   northPair: ["KC", "Tom"], southPair: ["Osh", "Max"],
+  //   status: "final",           // "scheduled" | "final" | "draw"
+  //   sets: [{n:4,s:2}, {n:3,s:4}],
+  //   superTiebreak: {n:10,s:7}  // only if sets finished 1-1, else null
   // }
-  fixtures: []
+  fixtures: [],
+
+  // Set from the "meta/tournament" Firestore doc — see subscribeTournamentStatus().
+  finished: false
 };
+
+let editingId = null;
 
 /* ---------------------------------------------------------------------
    Scoring engine
@@ -472,32 +783,37 @@ const TOURNAMENT = {
 function scoreMatch(match) {
   if (match.status === "scheduled") return null;
 
-  if (match.status === "draw") {
-    let northGames = 0, southGames = 0, northSets = 0, southSets = 0;
-    (match.sets || []).forEach(([n, s]) => {
-      northGames += n; southGames += s;
-      if (n > s) northSets++; else if (s > n) southSets++;
-    });
-    return { winner: null, northSets, southSets, northGames, southGames, northPts: 1, southPts: 1 };
-  }
-
-  // final
   let northSets = 0, southSets = 0, northGames = 0, southGames = 0;
-  (match.sets || []).forEach(([n, s]) => {
+  (match.sets || []).forEach(({ n, s }) => {
     northGames += n; southGames += s;
     if (n > s) northSets++; else if (s > n) southSets++;
   });
 
-  let winner;
-  if (match.superTiebreak) {
-    northGames += match.superTiebreak[0];
-    southGames += match.superTiebreak[1];
-    winner = match.superTiebreak[0] > match.superTiebreak[1] ? "north" : "south";
-  } else {
-    winner = northSets > southSets ? "north" : "south";
+  if (match.status === "draw") {
+    return { winner: null, northSets, southSets, northGames, southGames, northPts: 1, southPts: 1 };
   }
 
-  const loserWonSet = winner === "north" ? southSets > 0 : northSets > 0;
+  // final
+  let winner, loserWonSet;
+  if (match.superTiebreak) {
+    northGames += match.superTiebreak.n;
+    southGames += match.superTiebreak.s;
+    winner = match.superTiebreak.n > match.superTiebreak.s ? "north" : "south";
+    loserWonSet = winner === "north" ? southSets > 0 : northSets > 0;
+  } else if ((match.sets || []).length) {
+    winner = northSets > southSets ? "north" : "south";
+    loserWonSet = winner === "north" ? southSets > 0 : northSets > 0;
+  } else {
+    // Points-only result: no set-by-set score was recorded, just who won
+    // and whether the loser took a set off them. A match win always means
+    // 2 sets won; a "loser took a set" means they won 1, otherwise 0.
+    winner = match.winner;
+    loserWonSet = !!match.loserWonSet;
+    const loserSets = loserWonSet ? 1 : 0;
+    if (winner === "north") { northSets = 2; southSets = loserSets; }
+    else if (winner === "south") { southSets = 2; northSets = loserSets; }
+  }
+
   const northPts = winner === "north" ? 3 : (loserWonSet ? 1 : 0);
   const southPts = winner === "south" ? 3 : (loserWonSet ? 1 : 0);
 
@@ -566,16 +882,93 @@ function renderStandings() {
       </tr>`;
   }).join("");
 
-  const winningTeamEl = document.getElementById("winningTeam");
-  const allFinal = TOURNAMENT.fixtures.length > 0 && TOURNAMENT.fixtures.every(m => m.status !== "scheduled");
-  if (allFinal) {
-    if (t.north.pts === t.south.pts) {
-      winningTeamEl.textContent = "Drawn 🤝";
-      winningTeamEl.classList.remove("tbd");
+  renderTrophy(t);
+}
+
+/* ---------------------------------------------------------------------
+   Tournament finished flag + trophy cabinet
+   --------------------------------------------------------------------- */
+
+function computePlayerRecords(fixtures) {
+  const records = {};
+  const bump = (name, field) => {
+    if (!name) return;
+    if (!records[name]) records[name] = { wins: 0, losses: 0, draws: 0 };
+    records[name][field]++;
+  };
+  fixtures.forEach(m => {
+    const r = scoreMatch(m);
+    if (!r) return; // scheduled, no result yet
+    const northNames = (m.northPair || []).filter(Boolean);
+    const southNames = (m.southPair || []).filter(Boolean);
+    if (r.winner === "north") {
+      northNames.forEach(n => bump(n, "wins"));
+      southNames.forEach(n => bump(n, "losses"));
+    } else if (r.winner === "south") {
+      southNames.forEach(n => bump(n, "wins"));
+      northNames.forEach(n => bump(n, "losses"));
     } else {
-      winningTeamEl.textContent = t.north.pts > t.south.pts ? "North 🔵" : "South 🟠";
-      winningTeamEl.classList.remove("tbd");
+      northNames.concat(southNames).forEach(n => bump(n, "draws"));
     }
+  });
+  return records;
+}
+
+function bestAndWorstPlayers(records) {
+  const entries = Object.entries(records);
+  if (!entries.length) return { best: [], worst: [] };
+  const maxWins = Math.max(...entries.map(([, r]) => r.wins));
+  const maxLosses = Math.max(...entries.map(([, r]) => r.losses));
+  const best = maxWins > 0 ? entries.filter(([, r]) => r.wins === maxWins) : [];
+  const worst = maxLosses > 0 ? entries.filter(([, r]) => r.losses === maxLosses) : [];
+  return { best, worst };
+}
+
+function renderTrophy(t) {
+  const winningTeamEl = document.getElementById("winningTeam");
+  const bestPlayerEl = document.getElementById("bestPlayer");
+  const worstPlayerEl = document.getElementById("worstPlayer");
+  const banner = document.getElementById("finalBanner");
+  const bannerText = document.getElementById("finalBannerText");
+
+  if (!TOURNAMENT.finished) {
+    winningTeamEl.textContent = "To be decided";
+    winningTeamEl.classList.add("tbd");
+    bestPlayerEl.textContent = "To be decided";
+    bestPlayerEl.classList.add("tbd");
+    worstPlayerEl.textContent = "To be decided";
+    worstPlayerEl.classList.add("tbd");
+    banner.hidden = true;
+    return;
+  }
+
+  const drawn = t.north.pts === t.south.pts;
+  const winnerLabel = drawn ? "Drawn 🤝" : (t.north.pts > t.south.pts ? "North 🔵" : "South 🟠");
+  winningTeamEl.textContent = winnerLabel;
+  winningTeamEl.classList.remove("tbd");
+
+  banner.hidden = false;
+  bannerText.textContent = drawn
+    ? `It's a draw — North ${t.north.pts} pts, South ${t.south.pts} pts`
+    : `${t.north.pts > t.south.pts ? "North" : "South"} win the Box Office Cup, ${Math.max(t.north.pts, t.south.pts)}–${Math.min(t.north.pts, t.south.pts)}!`;
+
+  const records = computePlayerRecords(TOURNAMENT.fixtures);
+  const { best, worst } = bestAndWorstPlayers(records);
+
+  if (best.length) {
+    bestPlayerEl.textContent = best.map(([name, r]) => `${name} (${r.wins}W)`).join(" / ");
+    bestPlayerEl.classList.remove("tbd");
+  } else {
+    bestPlayerEl.textContent = "No results yet";
+    bestPlayerEl.classList.add("tbd");
+  }
+
+  if (worst.length) {
+    worstPlayerEl.textContent = worst.map(([name, r]) => `${name} (${r.losses}L)`).join(" / ");
+    worstPlayerEl.classList.remove("tbd");
+  } else {
+    worstPlayerEl.textContent = "No results yet";
+    worstPlayerEl.classList.add("tbd");
   }
 }
 
@@ -586,9 +979,16 @@ function fixtureBadge(status) {
 }
 
 function formatScoreline(match) {
-  const parts = (match.sets || []).map(([n, s]) => `${n}-${s}`);
-  if (match.superTiebreak) parts.push(`[${match.superTiebreak[0]}-${match.superTiebreak[1]}]`);
-  return parts.length ? parts.join(", ") : "—";
+  if ((match.sets || []).length) {
+    const parts = match.sets.map(({ n, s }) => `${n}-${s}`);
+    if (match.superTiebreak) parts.push(`[${match.superTiebreak.n}-${match.superTiebreak.s}]`);
+    return parts.join(", ");
+  }
+  if (match.status === "final" && match.winner) {
+    const r = scoreMatch(match);
+    return `${r.northPts}–${r.southPts} <span style="opacity:.55;font-size:.72em;">pts</span>`;
+  }
+  return "—";
 }
 
 function renderFixtures() {
@@ -600,8 +1000,8 @@ function renderFixtures() {
     container.innerHTML = `
       <div class="card empty-state">
         <div class="ico">🎾</div>
-        <h3>Fixtures coming soon</h3>
-        <p>Once the fixture list is confirmed, every match, pairing and result will show up here — and the league table above will update itself.</p>
+        <h3>No matches yet</h3>
+        <p>Hit "+ Add Match" above to log the fixture list — every match, pairing and result will show up here, and the league table above will update itself.</p>
       </div>`;
     return;
   }
@@ -609,31 +1009,46 @@ function renderFixtures() {
   const played = TOURNAMENT.fixtures.filter(m => m.status !== "scheduled").length;
   hint.textContent = `${played} / ${TOURNAMENT.fixtures.length} played`;
 
-  container.innerHTML = `<div class="fixtures-grid">` + TOURNAMENT.fixtures.map(m => `
-    <div class="card fixture-card">
+  container.innerHTML = `<div class="fixtures-grid">` + TOURNAMENT.fixtures.map(m => {
+    const result = scoreMatch(m);
+    const sideState = side => !result ? "" : result.winner === side ? "won" : result.winner ? "lost" : "draw";
+    const sidePill = side => {
+      if (!result) return "";
+      if (result.winner === side) return `<span class="result-pill win">W</span>`;
+      if (result.winner) return `<span class="result-pill loss">L</span>`;
+      return `<span class="result-pill draw">D</span>`;
+    };
+    return `
+    <div class="card fixture-card" data-id="${m.id}">
+      <button class="fixture-delete" data-id="${m.id}" type="button" title="Delete match">✕</button>
       <div class="fixture-top">
-        <span>${m.round || ("Match " + m.id)}${m.court ? " · " + m.court : ""}${m.time ? " · " + m.time : ""}</span>
+        <span>${m.round || "Match"}${m.court ? " · " + m.court : ""}${m.time ? " · " + m.time : ""}</span>
         ${fixtureBadge(m.status)}
       </div>
       <div class="fixture-sides">
-        <div class="fixture-side north">
-          <div class="fixture-pair">${(m.northPair || []).join(" / ")}</div>
+        <div class="fixture-side north ${sideState("north")}">
+          <div class="fixture-pair">${(m.northPair || []).filter(Boolean).join(" / ") || "TBC"}${sidePill("north")}</div>
         </div>
         <div class="fixture-score">${formatScoreline(m)}</div>
-        <div class="fixture-side south">
-          <div class="fixture-pair">${(m.southPair || []).join(" / ")}</div>
+        <div class="fixture-side south ${sideState("south")}">
+          <div class="fixture-pair">${(m.southPair || []).filter(Boolean).join(" / ") || "TBC"}${sidePill("south")}</div>
         </div>
       </div>
     </div>
-  `).join("") + `</div>`;
+  `;
+  }).join("") + `</div>`;
+}
+
+function playerChip(name) {
+  const initials = name.slice(0, 2).toUpperCase();
+  return `<div class="player-chip"><span class="player-avatar">${initials}</span><span class="name">${name}</span></div>`;
 }
 
 function renderSquad() {
-  const grid = document.getElementById("squadGrid");
-  grid.innerHTML = TOURNAMENT.players.map(name => {
-    const initials = name.slice(0, 2).toUpperCase();
-    return `<div class="player-chip"><span class="player-avatar">${initials}</span><span class="name">${name}</span></div>`;
-  }).join("");
+  document.getElementById("squadGridNorth").innerHTML = TOURNAMENT.northPlayers.length
+    ? TOURNAMENT.northPlayers.map(playerChip).join("")
+    : `<div class="squad-empty">No players added yet.</div>`;
+  document.getElementById("squadGridSouth").innerHTML = TOURNAMENT.southPlayers.map(playerChip).join("");
 }
 
 function renderStatusAndCountdown() {
@@ -679,12 +1094,242 @@ function renderStatusAndCountdown() {
   document.getElementById("cd-s").textContent = String(Math.max(s, 0)).padStart(2, "0");
 }
 
+/* ---------------------------------------------------------------------
+   Firestore live sync
+   --------------------------------------------------------------------- */
+
+function showSyncBanner(msg) {
+  document.getElementById("syncBannerText").textContent = msg;
+  document.getElementById("syncBanner").hidden = false;
+}
+function hideSyncBanner() {
+  document.getElementById("syncBanner").hidden = true;
+}
+
+function timeSortKey(time) {
+  const m = (time || "").match(/(\d{1,2}):(\d{2})/);
+  return m ? Number(m[1]) * 60 + Number(m[2]) : Infinity; // no time recorded -> sorts last
+}
+
+function courtSortKey(court) {
+  const m = (court || "").match(/\d+/);
+  return m ? Number(m[0]) : Infinity; // no court number -> sorts last
+}
+
+function sortFixtures(fixtures) {
+  return [...fixtures].sort((a, b) => {
+    const ta = timeSortKey(a.time), tb = timeSortKey(b.time);
+    if (ta !== tb) return ta - tb;
+    return courtSortKey(a.court) - courtSortKey(b.court);
+  });
+}
+
+function subscribeFixtures() {
+  const q = query(fixturesCol, orderBy("createdAt", "asc"));
+  onSnapshot(q, snap => {
+    TOURNAMENT.fixtures = sortFixtures(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    hideSyncBanner();
+    renderStandings();
+    renderFixtures();
+  }, err => {
+    console.error(err);
+    showSyncBanner("Live sync unavailable — open Firestore in the Firebase console and set rules to allow read/write on the \"fixtures\" collection.");
+  });
+}
+
+function subscribeTournamentStatus() {
+  onSnapshot(tournamentStatusDoc, snap => {
+    TOURNAMENT.finished = !!(snap.exists() && snap.data().finished);
+    updateFinishToggleButton();
+    renderStandings();
+  }, err => {
+    console.error(err);
+  });
+}
+
+function updateFinishToggleButton() {
+  const btn = document.getElementById("finishToggle");
+  btn.textContent = TOURNAMENT.finished ? "Reopen tournament" : "Mark tournament finished";
+}
+
+async function toggleTournamentFinished() {
+  const next = !TOURNAMENT.finished;
+  if (next && !confirm("Mark the tournament finished? This locks in the winning team and best/worst player based on the current results.")) {
+    return;
+  }
+  try {
+    await setDoc(tournamentStatusDoc, { finished: next }, { merge: true });
+  } catch (err) {
+    console.error(err);
+    showSyncBanner("Couldn't update tournament status — check Firestore rules allow writes.");
+  }
+}
+
+async function handleDelete(id) {
+  if (!confirm("Delete this match?")) return;
+  try {
+    await deleteDoc(doc(db, "fixtures", id));
+  } catch (err) {
+    console.error(err);
+    showSyncBanner("Couldn't delete — check Firestore rules allow writes.");
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Add / edit match modal
+   --------------------------------------------------------------------- */
+
+function initPlayerDatalist() {
+  const all = [...TOURNAMENT.northPlayers, ...TOURNAMENT.southPlayers];
+  document.getElementById("playerNames").innerHTML =
+    all.map(p => `<option value="${p}"></option>`).join("");
+}
+
+function readSetPair(nId, sId) {
+  const n = document.getElementById(nId).value;
+  const s = document.getElementById(sId).value;
+  if (n === "" || s === "") return null;
+  return { n: Number(n), s: Number(s) };
+}
+
+function currentFormMode() {
+  return document.querySelector('input[name="f-mode"]:checked').value;
+}
+
+function setFormMode(mode) {
+  document.getElementById(mode === "points" ? "f-mode-points" : "f-mode-sets").checked = true;
+  document.getElementById("setsFields").style.display = mode === "points" ? "none" : "contents";
+  document.getElementById("pointsFields").style.display = mode === "points" ? "contents" : "none";
+}
+
+function matchFromForm() {
+  const base = {
+    round: document.getElementById("f-round").value.trim() || "Match",
+    court: document.getElementById("f-court").value.trim(),
+    time: document.getElementById("f-time").value.trim(),
+    northPair: [document.getElementById("f-north1").value, document.getElementById("f-north2").value],
+    southPair: [document.getElementById("f-south1").value, document.getElementById("f-south2").value],
+    status: document.getElementById("f-status").value
+  };
+
+  if (currentFormMode() === "points") {
+    return {
+      ...base,
+      sets: [],
+      superTiebreak: null,
+      winner: document.getElementById("f-winner").value,
+      loserWonSet: document.getElementById("f-loserSet").checked
+    };
+  }
+
+  const sets = [];
+  const s1 = readSetPair("f-s1n", "f-s1s"); if (s1) sets.push(s1);
+  const s2 = readSetPair("f-s2n", "f-s2s"); if (s2) sets.push(s2);
+  return {
+    ...base,
+    sets,
+    superTiebreak: readSetPair("f-tbn", "f-tbs"),
+    winner: null,
+    loserWonSet: null
+  };
+}
+
+function openModal(fixture) {
+  editingId = fixture ? fixture.id : null;
+  document.getElementById("matchModalTitle").textContent = fixture ? "Edit Match" : "Add Match";
+  document.getElementById("deleteMatchBtn").hidden = !fixture;
+  document.getElementById("matchForm").reset();
+
+  if (fixture) {
+    document.getElementById("f-round").value = fixture.round || "";
+    document.getElementById("f-court").value = fixture.court || "";
+    document.getElementById("f-time").value = fixture.time || "";
+    document.getElementById("f-north1").value = (fixture.northPair || [])[0] || "";
+    document.getElementById("f-north2").value = (fixture.northPair || [])[1] || "";
+    document.getElementById("f-south1").value = (fixture.southPair || [])[0] || "";
+    document.getElementById("f-south2").value = (fixture.southPair || [])[1] || "";
+    document.getElementById("f-status").value = fixture.status || "scheduled";
+
+    const hasSets = (fixture.sets || []).length > 0;
+    setFormMode(hasSets ? "sets" : (fixture.winner ? "points" : "sets"));
+
+    const [s1, s2] = fixture.sets || [];
+    if (s1) { document.getElementById("f-s1n").value = s1.n; document.getElementById("f-s1s").value = s1.s; }
+    if (s2) { document.getElementById("f-s2n").value = s2.n; document.getElementById("f-s2s").value = s2.s; }
+    if (fixture.superTiebreak) {
+      document.getElementById("f-tbn").value = fixture.superTiebreak.n;
+      document.getElementById("f-tbs").value = fixture.superTiebreak.s;
+    }
+    if (fixture.winner) document.getElementById("f-winner").value = fixture.winner;
+    document.getElementById("f-loserSet").checked = !!fixture.loserWonSet;
+  } else {
+    document.getElementById("f-status").value = "scheduled";
+    setFormMode("sets");
+  }
+  document.getElementById("matchModalOverlay").hidden = false;
+}
+
+function closeModal() {
+  document.getElementById("matchModalOverlay").hidden = true;
+  editingId = null;
+}
+
+function wireModalEvents() {
+  document.getElementById("openAddMatch").addEventListener("click", () => openModal(null));
+  document.getElementById("cancelMatchBtn").addEventListener("click", closeModal);
+  document.querySelectorAll('input[name="f-mode"]').forEach(r => {
+    r.addEventListener("change", () => setFormMode(currentFormMode()));
+  });
+  document.getElementById("matchModalOverlay").addEventListener("click", e => {
+    if (e.target.id === "matchModalOverlay") closeModal();
+  });
+  document.getElementById("deleteMatchBtn").addEventListener("click", () => {
+    const id = editingId;
+    closeModal();
+    if (id) handleDelete(id);
+  });
+
+  document.getElementById("matchForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const data = matchFromForm();
+    try {
+      if (editingId) {
+        await updateDoc(doc(db, "fixtures", editingId), data);
+      } else {
+        await addDoc(fixturesCol, { ...data, createdAt: serverTimestamp() });
+      }
+      closeModal();
+    } catch (err) {
+      console.error(err);
+      showSyncBanner("Couldn't save — check Firestore rules allow writes.");
+    }
+  });
+}
+
+function wireFixtureCardEvents() {
+  document.getElementById("fixturesContainer").addEventListener("click", e => {
+    const delBtn = e.target.closest(".fixture-delete");
+    if (delBtn) { handleDelete(delBtn.dataset.id); return; }
+    const card = e.target.closest(".fixture-card");
+    if (card) {
+      const fixture = TOURNAMENT.fixtures.find(f => f.id === card.dataset.id);
+      if (fixture) openModal(fixture);
+    }
+  });
+}
+
 function init() {
+  initPlayerDatalist();
   renderStandings();
   renderFixtures();
   renderSquad();
   renderStatusAndCountdown();
   setInterval(renderStatusAndCountdown, 1000);
+  wireModalEvents();
+  wireFixtureCardEvents();
+  document.getElementById("finishToggle").addEventListener("click", toggleTournamentFinished);
+  subscribeFixtures();
+  subscribeTournamentStatus();
 }
 
 init();

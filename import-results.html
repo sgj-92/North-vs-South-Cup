@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Import Whiteboard Results — Box Office Cup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0e0a; --surface:#161d16; --surface-2:#1c241c;
+    --border: rgba(216,223,200,0.10); --border-strong: rgba(216,223,200,0.18);
+    --text:#f2f5ec; --text-dim:#aab4a0; --text-faint:#75816e;
+    --olive:#8a9a5b; --olive-light:#b7c98a; --olive-dark:#5c6b39;
+    --north:#4a9de0; --south:#e2683e; --gold:#e0b84a;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:'Inter',system-ui,sans-serif; line-height:1.5; padding: 0 20px 60px; }
+  .wrap{ max-width:900px; margin:0 auto; }
+  h1{ font-family:'Outfit',sans-serif; font-size:1.7rem; margin: 34px 0 6px; }
+  p.lede{ color:var(--text-dim); max-width:640px; }
+  .warn{
+    background: rgba(224,184,74,0.1); border:1px solid rgba(224,184,74,0.3);
+    border-radius:12px; padding:14px 16px; color:#e2c05a; font-size:0.9rem; margin:18px 0;
+  }
+  .warn b{ color:#f0d27a; }
+  table{ width:100%; border-collapse:collapse; margin-top:18px; background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+  th,td{ padding:10px 12px; text-align:left; font-size:0.85rem; border-bottom:1px solid var(--border); }
+  th{ text-transform:uppercase; letter-spacing:0.05em; font-size:0.68rem; color:var(--text-faint); background:var(--surface-2); }
+  tr:last-child td{ border-bottom:none; }
+  td.north{ color:var(--north); font-weight:600; }
+  td.south{ color:var(--south); font-weight:600; }
+  .badge{ display:inline-block; padding:2px 9px; border-radius:999px; font-size:0.72rem; font-weight:700; }
+  .badge.final{ background:rgba(224,184,74,0.14); color:var(--gold); }
+  .badge.scheduled{ background:var(--surface-2); color:var(--text-dim); border:1px solid var(--border); }
+  .note{ font-size:0.72rem; color:var(--text-faint); }
+  .actions{ display:flex; align-items:center; gap:14px; margin-top:24px; flex-wrap:wrap; }
+  button{
+    background:var(--olive-dark); color:#eef2e2; border:1px solid var(--olive);
+    font-weight:700; font-size:0.9rem; padding:11px 20px; border-radius:999px;
+    cursor:pointer; font-family:inherit;
+  }
+  button:hover{ background:var(--olive); }
+  button:disabled{ opacity:0.5; cursor:not-allowed; }
+  #log{ margin-top:18px; font-size:0.85rem; }
+  #log div{ padding:6px 0; border-bottom:1px solid var(--border); color:var(--text-dim); }
+  #log div.ok{ color:var(--olive-light); }
+  #log div.skip{ color:var(--text-faint); }
+  #log div.err{ color:#e28a7a; }
+  a.back{ color:var(--text-dim); font-size:0.85rem; }
+  @media (max-width:640px){ table{ font-size:0.78rem; } th,td{ padding:8px 6px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Back to tracker</a>
+  <h1>Import Whiteboard Results</h1>
+  <p class="lede">Transcribed from the round-sheet photo. This writes straight into the same Firestore "fixtures" collection the live tracker reads from — check the table below before hitting import.</p>
+
+  <div class="warn">
+    <b>Lower-confidence reads, worth double-checking:</b>
+    Round 2, Court 4 (Kay+Harry vs Len+Max) — only one "3" was visible so it's logged as a straight win for Len+Max, no set taken.
+    Round 2, Courts 1–3 had pairings but no score marked on the board, so they're imported as <b>Scheduled</b> (no result) rather than guessed.
+    Everything else (Round 1, and the four-match list at the bottom of the board) had a winner mark that matched the separate "Winners" column or an explicit 3/1 pair, so confidence is high.
+  </div>
+
+  <table>
+    <thead><tr><th>Round</th><th>North</th><th>South</th><th>Result</th><th>Status</th></tr></thead>
+    <tbody id="previewBody"></tbody>
+  </table>
+
+  <div class="actions">
+    <button id="importBtn">Import into tracker</button>
+    <span class="note" id="statusNote"></span>
+  </div>
+
+  <div id="log"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, getDocs, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCt4IHRj-uCzftm6_CZQTmG-pZeEf2Co2E",
+  authDomain: "north-vs-south-9d931.firebaseapp.com",
+  projectId: "north-vs-south-9d931",
+  storageBucket: "north-vs-south-9d931.firebasestorage.app",
+  messagingSenderId: "357512742443",
+  appId: "1:357512742443:web:32b82a7f6b19aef8f48c6e"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const fixturesCol = collection(db, "fixtures");
+
+// Transcribed from the whiteboard photo. Points-only results (no set
+// scores were on the board) use { winner, loserWonSet } — see the
+// "Just win / loss" mode in the main tracker's Add/Edit Match form.
+const RESULTS = [
+  { round: "Round 1", court: "Court 1", northPair: ["Baz", "Kie"],   southPair: ["Kaz", "Osh"],   status: "final",     winner: "south", loserWonSet: false },
+  { round: "Round 1", court: "Court 2", northPair: ["Jess", "Remmy"],southPair: ["Erf", "KC"],    status: "final",     winner: "north", loserWonSet: false },
+  { round: "Round 1", court: "Court 3", northPair: ["Tyler", "Kay"], southPair: ["Len", "Rishi"], status: "final",     winner: "south", loserWonSet: false },
+  { round: "Round 1", court: "Court 4", northPair: ["James", "Harry"], southPair: ["Max", "Tom"], status: "final",     winner: "north", loserWonSet: false },
+
+  { round: "Round 2", court: "Court 1", northPair: ["Baz", "Jess"],  southPair: ["Osh", "KC"],    status: "scheduled", winner: null,    loserWonSet: false },
+  { round: "Round 2", court: "Court 2", northPair: ["Kie", "Remmy"], southPair: ["Kaz", "Erf"],   status: "scheduled", winner: null,    loserWonSet: false },
+  { round: "Round 2", court: "Court 3", northPair: ["Tyler", "James"], southPair: ["Rishi", "Tom"], status: "scheduled", winner: null,  loserWonSet: false },
+  { round: "Round 2", court: "Court 4", northPair: ["Kay", "Harry"], southPair: ["Len", "Max"],   status: "final",     winner: "south", loserWonSet: false },
+
+  { round: "Round 3", court: "Match 1", northPair: ["Baz", "Remmy"], southPair: ["Kaz", "KC"],    status: "final",     winner: "north", loserWonSet: true },
+  { round: "Round 3", court: "Match 2", northPair: ["Jess", "Kie"],  southPair: ["Erf", "Osh"],   status: "final",     winner: "south", loserWonSet: true },
+  { round: "Round 3", court: "Match 3", northPair: ["Kay", "James"], southPair: ["Rishi", "Max"], status: "final",     winner: "north", loserWonSet: true },
+  { round: "Round 3", court: "Match 4", northPair: ["Harry", "Tyler"], southPair: ["Len", "Tom"], status: "final",     winner: "north", loserWonSet: false }
+];
+
+function resultLabel(m) {
+  if (m.status === "scheduled") return "—";
+  const northPts = m.winner === "north" ? 3 : (m.loserWonSet ? 1 : 0);
+  const southPts = m.winner === "south" ? 3 : (m.loserWonSet ? 1 : 0);
+  return `${northPts}–${southPts} pts`;
+}
+
+function renderPreview() {
+  document.getElementById("previewBody").innerHTML = RESULTS.map(m => `
+    <tr>
+      <td>${m.round}<br><span class="note">${m.court}</span></td>
+      <td class="north">${m.northPair.join(" / ")}</td>
+      <td class="south">${m.southPair.join(" / ")}</td>
+      <td>${resultLabel(m)}</td>
+      <td><span class="badge ${m.status}">${m.status === "final" ? "Final" : "Scheduled"}</span></td>
+    </tr>
+  `).join("");
+}
+renderPreview();
+
+function matchKey(m) {
+  return [m.round, m.court, m.northPair.join("+"), m.southPair.join("+")].join("|").toLowerCase();
+}
+
+function log(msg, cls) {
+  const div = document.createElement("div");
+  div.className = cls || "";
+  div.textContent = msg;
+  document.getElementById("log").appendChild(div);
+}
+
+document.getElementById("importBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("importBtn");
+  const statusNote = document.getElementById("statusNote");
+  btn.disabled = true;
+  statusNote.textContent = "Checking for duplicates…";
+  document.getElementById("log").innerHTML = "";
+
+  try {
+    const existingSnap = await getDocs(fixturesCol);
+    const existingKeys = new Set(existingSnap.docs.map(d => matchKey(d.data())));
+
+    let added = 0, skipped = 0, failed = 0;
+    for (const m of RESULTS) {
+      const key = matchKey(m);
+      if (existingKeys.has(key)) {
+        log(`Skipped (already in tracker): ${m.round} ${m.court} — ${m.northPair.join("/")} vs ${m.southPair.join("/")}`, "skip");
+        skipped++;
+        continue;
+      }
+      try {
+        await addDoc(fixturesCol, {
+          round: m.round, court: m.court, time: "",
+          northPair: m.northPair, southPair: m.southPair,
+          status: m.status, sets: [], superTiebreak: null,
+          winner: m.winner, loserWonSet: m.loserWonSet,
+          createdAt: serverTimestamp()
+        });
+        log(`Added: ${m.round} ${m.court} — ${m.northPair.join("/")} vs ${m.southPair.join("/")} (${resultLabel(m)})`, "ok");
+        added++;
+      } catch (err) {
+        log(`Failed: ${m.round} ${m.court} — ${err.message}`, "err");
+        failed++;
+      }
+    }
+    statusNote.textContent = `Done — ${added} added, ${skipped} already there, ${failed} failed.`;
+  } catch (err) {
+    statusNote.textContent = "Couldn't reach Firestore — check the rules are published.";
+    log(err.message, "err");
+  }
+  btn.disabled = false;
+});
+</script>
+</body>
+</html>
